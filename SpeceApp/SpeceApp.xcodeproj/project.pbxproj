@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		09BB6A202D82079C004C07C5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BB6A1F2D82079C004C07C5 /* HomeView.swift */; };
 		D0CC6CD52D81EE6100484136 /* SpeceAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0CC6CD42D81EE6100484136 /* SpeceAppApp.swift */; };
 		D0CC6CD72D81EE6100484136 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0CC6CD62D81EE6100484136 /* ContentView.swift */; };
 		D0CC6CD92D81EE6400484136 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0CC6CD82D81EE6400484136 /* Assets.xcassets */; };
@@ -14,6 +15,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		09BB6A1F2D82079C004C07C5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		D0CC6CD12D81EE6100484136 /* SpeceApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpeceApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0CC6CD42D81EE6100484136 /* SpeceAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeceAppApp.swift; sourceTree = "<group>"; };
 		D0CC6CD62D81EE6100484136 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -57,6 +59,7 @@
 				D0CC6CD82D81EE6400484136 /* Assets.xcassets */,
 				D0CC6CDA2D81EE6400484136 /* SpeceApp.entitlements */,
 				D0CC6CDB2D81EE6400484136 /* Preview Content */,
+				09BB6A1F2D82079C004C07C5 /* HomeView.swift */,
 			);
 			path = SpeceApp;
 			sourceTree = "<group>";
@@ -139,6 +142,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09BB6A202D82079C004C07C5 /* HomeView.swift in Sources */,
 				D0CC6CD72D81EE6100484136 /* ContentView.swift in Sources */,
 				D0CC6CD52D81EE6100484136 /* SpeceAppApp.swift in Sources */,
 			);
