@@ -109,7 +109,6 @@ class CountdownViewModel: MyObservableModel {
         case .fetchLaunches:
             fetchingState = .loading
             Task {
-                
 //                try? await Task.sleep(for: .seconds(3))
                 let result = await network.fetchArrayData(from: URL(string: "https://api.spacexdata.com/v3/launches")!)
                 
