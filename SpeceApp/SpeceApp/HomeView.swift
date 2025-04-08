@@ -97,6 +97,7 @@ struct LaunchView2: View {
     
 }
 
+@MainActor
 class CountdownViewModel: MyObservableModel {
     
     private let network: LaunchFetcher = .init()
@@ -110,14 +111,14 @@ class CountdownViewModel: MyObservableModel {
             fetchingState = .loading
             Task {
 //                try? await Task.sleep(for: .seconds(3))
-                let result = await network.fetchArrayData(from: URL(string: "https://api.spacexdata.com/v3/launches")!)
+                let result = await network.fetchUpcoming()//fetchArrayData()
                 
-                switch result {
-                case .success(let launch):
-                    fetchingState = .success(launch)
-                case .failure(let failure):
-                    fetchingState = .error(failure)
-                }
+//                switch result {
+//                case .success(let launch):
+//                    fetchingState = .success(launch)
+//                case .failure(let failure):
+//                    fetchingState = .error(failure)
+//                }
             }
         }
     }
@@ -165,94 +166,51 @@ extension MyObservableModel {
     }
 }
 
-//API logic
-
-import Foundation
-
-//TODO: snake case opitmization
-
-struct Launch: Codable, Equatable, Identifiable {
-    
-    static func == (lhs: Launch, rhs: Launch) -> Bool {
-        lhs.flightNumber == rhs.flightNumber
-    }
-    
-    var id: Int { flightNumber }
-    
-    let flightNumber: Int
-    let missionName: String
-    let launchYear: String
-    let launchDateUTC: String
-    let launchSuccess: Bool?
-    let details: String?
-    let links: Links
-    let launchSite: LaunchSite
-    let rocket: Rocket
-    let launchFailureDetails: LaunchFailureDetails?
-
-    enum CodingKeys: String, CodingKey {
-        case flightNumber = "flight_number"
-        case missionName = "mission_name"
-        case launchYear = "launch_year"
-        case launchDateUTC = "launch_date_utc"
-        case launchSuccess = "launch_success"
-        case details
-        case links
-        case launchSite = "launch_site"
-        case rocket
-        case launchFailureDetails = "launch_failure_details"
-    }
-}
-
-struct Links: Codable {
-    let missionPatch: String?
-    let articleLink: String?
-
-    enum CodingKeys: String, CodingKey {
-        case missionPatch = "mission_patch"
-        case articleLink = "article_link"
-    }
-}
-
-struct LaunchSite: Codable {
-    let siteID: String
-    let siteName: String
-
-    enum CodingKeys: String, CodingKey {
-        case siteID = "site_id"
-        case siteName = "site_name"
-    }
-}
-
-struct Rocket: Codable {
-    let rocketName: String
-    let rocketType: String
-
-    enum CodingKeys: String, CodingKey {
-        case rocketName = "rocket_name"
-        case rocketType = "rocket_type"
-    }
-}
-
-struct LaunchFailureDetails: Codable {
-    let time: Int
-    let reason: String
-}
-
 // Create a class to handle the API request
 class LaunchFetcher {
+    private let rM: RequestManager
+    
+    init() {
+        self.rM = RequestManager()
+    }
 
-    func fetchArrayData(from url: URL) async -> Result<[Launch], Error> {
+    func fetchArrayData() async -> Result<[Launch], AppError> {
         do {
             // Fetch the data and response
-            let (data, _) = try await URLSession.shared.data(from: url)
-            
-            // Decode the data into the specified type (an array of T)
-            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
-            
-            return .success(decodedData)
+//            let (data, _) = try await URLSession.shared.data(from: url)
+//            
+//            // Decode the data into the specified type (an array of T)
+//            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
+            let decodedData = try await self.rM.fetchLaunches()
+            return .success(decodedData.launches)
         } catch {
-            return .failure(error)
+            
+            if let afError = error.asAFError {
+                return .failure(.af(afError))
+            } else {
+                return .failure(.unknown)
+            }
+        }
+    }
+    
+    func fetchUpcoming() async {
+        do {
+            // Fetch the data and response
+//            let (data, _) = try await URLSession.shared.data(from: url)
+//
+//            // Decode the data into the specified type (an array of T)
+//            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
+            let decodedData = try await self.rM.fetchUpcomingLaunches()
+            print(decodedData)
+//            return .success(decodedData.launches)
+        } catch {
+            print(error)
+//
+//            if let afError = error.asAFError {
+//                return .failure(.af(afError))
+//            } else {
+//                return .failure(.unknown)
+//            }
         }
     }
 }
