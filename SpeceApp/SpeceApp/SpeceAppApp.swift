@@ -7,24 +7,19 @@
 
 import SwiftUI
 
-
 @main
 struct SpeceAppApp: App {
     
     init() {
-        let appearance = UITabBarAppearance()
-        appearance.backgroundEffect = UIBlurEffect(style: .systemMaterialDark)
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
+//        UITabBar.setTabBarAppearance()
+        UINavigationBar.setAppearance()
     }
     
     var body: some Scene {
         WindowGroup {
             HomeView()
+                .tint(.Text.primary)
         }
     }
     
 }
-
-
-

@@ -45,9 +45,11 @@ enum SpaceX {
     
     func url() -> URL {
 //        URL(string: "https://api.spacexdata.com\(path)")!
-        var url = URL(string: "https://ll.thespacedevs.com\(path)")!
+        var url = URL(string: "https://lldev.thespacedevs.com\(path)")!
 //        ["format": "json"]
         url.append(queryItems: [.init(name: "format", value: "json")])
+        
+        
         print(url.absoluteString)
         return url
     }

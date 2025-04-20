@@ -9,133 +9,205 @@ import SwiftUI
 
 struct HomeView: View {
     
+    @State var isSheetPresented = false
+    
     var body: some View {
         TabView {
             NavigationStack {
-                CountdownView()
+                LaunchesView()
+                    .navigationTitle("Launches")
             }
-            .tabItem { Label("Home", systemImage: "house.fill") }
+            .tabItem { Label("Launches", systemImage: "paperplane.fill") }
             
             LaunchView()
                 .tabItem { Label("Launch", systemImage: "magnifyingglass") }
         }
     }
-    
 }
 
 #Preview {
     HomeView()
 }
 
-struct CountdownView: View {
-    
-    @ObservedObject var viewModel: CountdownViewModel = .init()
-    
-    var filteredItems: [String] {
-        let array = (0..<100).map {"Item_\($0)"}
-        return viewModel.searchText.isEmpty ? array : array.filter { $0 == viewModel.searchText }
-    }
-    
-    
-    
-    var body: some View {
-        ScrollView {
-            LazyVStack {
-                switch viewModel.fetchingState {
-                case .loading:
-                    ProgressView()
-                
-                case .idle:
-                    EmptyView()
-                
-                case .success(let launches):
-                    ForEach(launches) {
-                        LaunchView2(launch: $0)
-                    }
-                case .error(let e):
-                    Text(e.localizedDescription)
-                }
-            }
-        }
-        .searchable(
-            text: viewModel.binding(for: \.searchText, action: { newValue in .changeSearchText(newValue) })
-        )
-        .onReceive(viewModel.$searchText, perform: { updatedValue in
-            print(updatedValue)
-        })
-        .onAppear { viewModel.send(action: .fetchLaunches) }
-    }
-    
-    func launch(item: String) -> some View {
-        HStack {
-            Text(item)
-                .font(.body.bold())
-                .padding()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.gray)
-        .padding(.horizontal, 10)
-    }
-    
-}
-
-struct LaunchView2: View {
-    
-    let launch: Launch
-   
-    
-    var body: some View {
-        VStack {
-            Text(launch.missionName)
-               
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.gray)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-    }
-    
-}
-
-@MainActor
-class CountdownViewModel: MyObservableModel {
-    
-    private let network: LaunchFetcher = .init()
-    
-    func send(action: Action) {
-        switch action {
-        case .changeSearchText(let string):
-            searchText = string
-        
-        case .fetchLaunches:
-            fetchingState = .loading
-            Task {
-//                try? await Task.sleep(for: .seconds(3))
-                let result = await network.fetchUpcoming()//fetchArrayData()
-                
-//                switch result {
-//                case .success(let launch):
-//                    fetchingState = .success(launch)
-//                case .failure(let failure):
-//                    fetchingState = .error(failure)
+//struct CountdownView: View {
+//    
+//    @ObservedObject var viewModel: CountdownViewModel = .init()
+//    
+//    var filteredItems: [String] {
+//        let array = (0..<100).map {"Item_\($0)"}
+//        return viewModel.searchText.isEmpty ? array : array.filter { $0 == viewModel.searchText }
+//    }
+//    
+//    
+//    
+//    var body: some View {
+//        ScrollView {
+//           
+////                Button(action: {
+////                    requestNotify()
+////                }) {
+////                    Text(NSLocalizedString("Vyziadaj", comment: ""))
+////                        .padding()
+////                        .frame(maxWidth: .infinity)
+////                        .background(Color.blue)
+////                        .foregroundColor(.white)
+////                        .cornerRadius(10)
+////                        .padding(.horizontal)
+////                }
+////                Button(action: {
+////                    buttonTapped()
+////                }) {
+////                    Text(NSLocalizedString("Notifikacia", comment: ""))
+////                        .padding()
+////                        .frame(maxWidth: .infinity)
+////                        .background(Color.blue)
+////                        .foregroundColor(.white)
+////                        .cornerRadius(10)
+////                        .padding(.horizontal)
+////                }
+////                Button(action: {
+////                    checkNotify()
+////                }) {
+////                    Text(NSLocalizedString("Skontroluj", comment: ""))
+////                        .padding()
+////                        .frame(maxWidth: .infinity)
+////                        .background(Color.blue)
+////                        .foregroundColor(.white)
+////                        .cornerRadius(10)
+////                        .padding(.horizontal)
+////                }
+//                switch viewModel.fetchingState {
+//                case .loading:
+//                    VStack {
+//                        ProgressView()
+//                    }
+//                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+//                    .tint(.Text.primary)
+//                
+//                case .idle:
+//                    Rectangle()
+//                        .fill(.black)
+//                
+//                case .success(let launches):
+//                    ForEach(launches) { launch in
+//                        LaunchListView(
+//                            launch: launch, 
+//                            isSaved: CacheManager.shared.savedLaunches.contains(launch),
+//                            onTap: {  },
+//                            onSave: { CacheManager.shared.toggleSavedLaunch(launch) }
+//                        )
+//                        .listRowBackground(Color.clear)
+//                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+//                        .listRowSeparator(.hidden)
+//                        .padding(.horizontal, 16)
+//                    }
+//                case .error(let e):
+//                    
+//                    Text(e.localizedDescription)
 //                }
-            }
-        }
-    }
-    
-    
-    enum Action {
-        case changeSearchText(String)
-        case fetchLaunches
-    }
-    
-    
-    @Published var searchText: String = ""
-    @Published var items: [Int] = []
-    @Published var fetchingState: FetchingState<[Launch], Error> = .idle
-    
-    
-}
+//            
+//        }
+//        .onReceive(CacheManager.shared.savedLaunchedPublisher) {
+//            print($0.count)
+//        }
+//        .listStyle(.plain)
+//        .scrollContentBackground(.hidden)
+//        .refreshable { viewModel.send(action: .fetchLaunches(isPullToRefresh: true)) }
+//        .searchable(
+//            text: viewModel.binding(for: \.searchText, action: { newValue in .changeSearchText(newValue) })
+//        )
+//        .onReceive(viewModel.$searchText, perform: { updatedValue in
+//            print(updatedValue)
+//        })
+//        .background(Color.black.ignoresSafeArea())
+//        .onAppear { viewModel.send(action: .fetchLaunches()) }
+//        
+//    }
+//    
+//    func requestNotify() {
+//        Task {
+//            let isGranted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+//            let status  = try await UNUserNotificationCenter.current().notificationSettings()
+//            
+//            print(
+//                isGranted, status.authorizationStatus
+//            )
+//        }
+//    }
+//
+//    func buttonTapped() {
+//        scheduleLocalizedNotification()
+//    }
+//    
+//    func checkNotify() {
+//        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+//            print("Pending notifications: \(requests)")
+//        }
+//    }
+//    
+//    func launch(item: String) -> some View {
+//        HStack {
+//            Text(item)
+//                .font(.body.bold())
+//                .padding()
+//        }
+//        .frame(maxWidth: .infinity, alignment: .leading)
+//        .background(.gray)
+//        .padding(.horizontal, 10)
+//    }
+//    
+//}
+
+//@MainActor
+//class CountdownViewModel: MyObservableModel {
+//    
+//    private let network: LaunchFetcher = .init()
+//    
+//    func send(action: Action) {
+//        switch action {
+//        case .changeSearchText(let string):
+//            searchText = string
+//        
+//        case .fetchLaunches(let isPullToRefresh):
+//            if !isPullToRefresh {
+//                fetchingState = .loading
+//            }
+//            
+//            Task {
+//                if isPullToRefresh {
+//                    try? await Task.sleep(for: .seconds(0.3))
+//                }
+//                
+////                let result = await network.fetchUpcoming()//fetchArrayData()
+//                
+//                if isPullToRefresh {
+//                    try? await Task.sleep(for: .seconds(0.3))
+//                }
+//                
+//                
+////                switch result {
+////                case .success(let launch):
+////                    fetchingState = .success(launch)
+////                case .failure(let failure):
+////                    fetchingState = .error(failure)
+////                }
+//            }
+//        }
+//    }
+//    
+//    
+//    enum Action {
+//        case changeSearchText(String)
+//        case fetchLaunches(isPullToRefresh: Bool = false)
+//    }
+//    
+//    
+//    @Published var searchText: String = ""
+//    @Published var items: [Int] = []
+//    @Published var fetchingState: FetchingState<[LaunchResult], Error> = .idle
+//    
+//    
+//}
 
 enum FetchingState<T: Equatable, E: Error> {
     
@@ -143,6 +215,20 @@ enum FetchingState<T: Equatable, E: Error> {
     case idle
     case success(T)
     case error(E)
+    
+    var successValue: T? {
+        switch self {
+        case .success(let value): value
+        default: nil
+        }
+    }
+    
+    var isSuccess: Bool {
+        switch self {
+        case .success: true
+        default: false
+        }
+    }
     
 }
 
@@ -166,54 +252,76 @@ extension MyObservableModel {
     }
 }
 
-// Create a class to handle the API request
-class LaunchFetcher {
-    private let rM: RequestManager
-    
-    init() {
-        self.rM = RequestManager()
-    }
-
-    func fetchArrayData() async -> Result<[Launch], AppError> {
-        do {
-            // Fetch the data and response
-//            let (data, _) = try await URLSession.shared.data(from: url)
-//            
-//            // Decode the data into the specified type (an array of T)
-//            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
-            let decodedData = try await self.rM.fetchLaunches()
-            return .success(decodedData.launches)
-        } catch {
-            
-            if let afError = error.asAFError {
-                return .failure(.af(afError))
-            } else {
-                return .failure(.unknown)
-            }
-        }
-    }
-    
-    func fetchUpcoming() async {
-        do {
-            // Fetch the data and response
-//            let (data, _) = try await URLSession.shared.data(from: url)
+//// Create a class to handle the API request
+//class LaunchFetcher {
+//    private let rM: RequestManager
+//    
+//    init() {
+//        self.rM = RequestManager()
+//    }
 //
-//            // Decode the data into the specified type (an array of T)
-//            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
-            let decodedData = try await self.rM.fetchUpcomingLaunches()
-            print(decodedData)
+//    func fetchArrayData() async -> Result<[Launch], AppError> {
+//        do {
+//            // Fetch the data and response
+////            let (data, _) = try await URLSession.shared.data(from: url)
+////            
+////            // Decode the data into the specified type (an array of T)
+////            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
+//            let decodedData = try await self.rM.fetchLaunches()
 //            return .success(decodedData.launches)
-        } catch {
-            print(error)
-//
+//        } catch {
+//            
 //            if let afError = error.asAFError {
 //                return .failure(.af(afError))
 //            } else {
 //                return .failure(.unknown)
 //            }
+//        }
+//    }
+//    
+//    func fetchUpcoming() async throws -> [LaunchResult] {
+//        do {
+//            // Fetch the data and response
+////            let (data, _) = try await URLSession.shared.data(from: url)
+////
+////            // Decode the data into the specified type (an array of T)
+////            let decodedData = try JSONDecoder().decode([Launch].self, from: data)
+//            let decodedData = try await self.rM.fetchUpcomingLaunches()
+//            print(decodedData)
+//            return decodedData.results
+//        } catch {
+//            print(error)
+//            if let afError = error.asAFError {
+//                throw AppError.af(afError)
+//            } else {
+//                throw AppError.unknown
+//            }
+//        }
+//    }
+//}
+
+import UserNotifications
+
+func scheduleLocalizedNotification() {
+    let center = UNUserNotificationCenter.current()
+    
+    let content = UNMutableNotificationContent()
+    content.title = NSLocalizedString("Odlet zacina o 15min", comment: "")
+    content.body = NSLocalizedString("Notifikacia funguje", comment: "")
+    content.sound = .default
+
+    // Trigger in 10 seconds
+    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 15, repeats: false)
+
+    let request = UNNotificationRequest(identifier: "localReminder", content: content, trigger: trigger)
+
+    center.add(request) { error in
+        if let error = error {
+            print("Notification error: \(error.localizedDescription)")
         }
     }
 }
+
 
 
 import MapKit
