@@ -53,6 +53,7 @@ struct LaunchesView: View {
                 ScrollView {
                     LazyVStack {
                         ForEach(launches) { launch in
+                            // It doesn't need viewmodel because it is just small view that decreases repeating of the code
                             LaunchListView(
                                 launch: launch,
                                 isSaved: viewModel.savedLaunches.contains(launch),
@@ -79,7 +80,12 @@ struct LaunchesView: View {
                 .refreshable { await viewModel.fetchLaunches(isPullToRefresh: true) }
                 .scrollContentBackground(.hidden)
                 .navigationDestination(item: $viewModel.selectedLaunchId) { id in
-                    LaunchDetailView(id: id)
+                    //TODO: chnge to viewmodel
+                    if let launchWithDetail = launches.first(where: { $0.id == id }) {
+                        LaunchDetailView(isSaved: CacheManager.shared.savedLaunches.contains(launchWithDetail),
+                                         id: id,
+                                         onSave: { CacheManager.shared.toggleSavedLaunch(launchWithDetail)})
+                    }
                 }
             }
         }

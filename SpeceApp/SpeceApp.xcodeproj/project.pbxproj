@@ -13,6 +13,12 @@
 		09AB39982DB2DC07006DE694 /* LaunchesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39972DB2DC07006DE694 /* LaunchesViewModel.swift */; };
 		09AB399B2DB2E9CC006DE694 /* LaunchDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB399A2DB2E9CC006DE694 /* LaunchDetailView.swift */; };
 		09AB399D2DB2EF42006DE694 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 09AB399C2DB2EF42006DE694 /* LaunchScreen.storyboard */; };
+		09AB399F2DB52632006DE694 /* CountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB399E2DB52632006DE694 /* CountdownView.swift */; };
+		09AB39A12DB7B544006DE694 /* LaunchDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A02DB7B544006DE694 /* LaunchDetailViewModel.swift */; };
+		09AB39A32DB7D96A006DE694 /* LaunchDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A22DB7D96A006DE694 /* LaunchDetail.swift */; };
+		09AB39A52DB81D56006DE694 /* SocialMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A42DB81D56006DE694 /* SocialMediaView.swift */; };
+		09AB39A72DB81E93006DE694 /* RocketSpecificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A62DB81E93006DE694 /* RocketSpecificationView.swift */; };
+		09AB39AA2DBC102E006DE694 /* SwiftUIReactorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 09AB39A92DBC102E006DE694 /* SwiftUIReactorKit */; };
 		09BB6A202D82079C004C07C5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BB6A1F2D82079C004C07C5 /* HomeView.swift */; };
 		09BB6A232D919EFE004C07C5 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 09BB6A222D919EFE004C07C5 /* Alamofire */; };
 		09BB6A262DA14944004C07C5 /* RequestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BB6A252DA14944004C07C5 /* RequestManager.swift */; };
@@ -36,6 +42,11 @@
 		09AB39972DB2DC07006DE694 /* LaunchesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchesViewModel.swift; sourceTree = "<group>"; };
 		09AB399A2DB2E9CC006DE694 /* LaunchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchDetailView.swift; sourceTree = "<group>"; };
 		09AB399C2DB2EF42006DE694 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		09AB399E2DB52632006DE694 /* CountdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownView.swift; sourceTree = "<group>"; };
+		09AB39A02DB7B544006DE694 /* LaunchDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchDetailViewModel.swift; sourceTree = "<group>"; };
+		09AB39A22DB7D96A006DE694 /* LaunchDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchDetail.swift; sourceTree = "<group>"; };
+		09AB39A42DB81D56006DE694 /* SocialMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialMediaView.swift; sourceTree = "<group>"; };
+		09AB39A62DB81E93006DE694 /* RocketSpecificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RocketSpecificationView.swift; sourceTree = "<group>"; };
 		09BB6A1F2D82079C004C07C5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		09BB6A252DA14944004C07C5 /* RequestManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestManager.swift; sourceTree = "<group>"; };
 		09BB6A292DA149D0004C07C5 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
@@ -59,6 +70,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				09BB6A352DB278B5004C07C5 /* Kingfisher in Frameworks */,
+				09AB39AA2DBC102E006DE694 /* SwiftUIReactorKit in Frameworks */,
 				09BB6A232D919EFE004C07C5 /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -105,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				09AB399A2DB2E9CC006DE694 /* LaunchDetailView.swift */,
+				09AB39A02DB7B544006DE694 /* LaunchDetailViewModel.swift */,
 			);
 			path = Detail;
 			sourceTree = "<group>";
@@ -140,6 +153,7 @@
 			children = (
 				09BB6A2D2DA14AC7004C07C5 /* LaunchResponse.swift */,
 				09BB6A2F2DA151C7004C07C5 /* Upcoming.swift */,
+				09AB39A22DB7D96A006DE694 /* LaunchDetail.swift */,
 			);
 			path = Response;
 			sourceTree = "<group>";
@@ -148,6 +162,9 @@
 			isa = PBXGroup;
 			children = (
 				09BB6A362DB278E0004C07C5 /* LaunchListView.swift */,
+				09AB399E2DB52632006DE694 /* CountdownView.swift */,
+				09AB39A42DB81D56006DE694 /* SocialMediaView.swift */,
+				09AB39A62DB81E93006DE694 /* RocketSpecificationView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -232,6 +249,7 @@
 			packageProductDependencies = (
 				09BB6A222D919EFE004C07C5 /* Alamofire */,
 				09BB6A342DB278B5004C07C5 /* Kingfisher */,
+				09AB39A92DBC102E006DE694 /* SwiftUIReactorKit */,
 			);
 			productName = SpeceApp;
 			productReference = D0CC6CD12D81EE6100484136 /* SpeceApp.app */;
@@ -264,6 +282,7 @@
 			packageReferences = (
 				09BB6A212D919EFE004C07C5 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				09BB6A332DB278B5004C07C5 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				09AB39A82DBC102E006DE694 /* XCRemoteSwiftPackageReference "ReactorKit-SwiftUI" */,
 			);
 			productRefGroup = D0CC6CD22D81EE6100484136 /* Products */;
 			projectDirPath = "";
@@ -293,12 +312,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09AB39A12DB7B544006DE694 /* LaunchDetailViewModel.swift in Sources */,
 				09BB6A2E2DA14AC7004C07C5 /* LaunchResponse.swift in Sources */,
 				09BB6A3F2DB28FAD004C07C5 /* UITabBarExtensions.swift in Sources */,
+				09AB39A32DB7D96A006DE694 /* LaunchDetail.swift in Sources */,
 				09AB39982DB2DC07006DE694 /* LaunchesViewModel.swift in Sources */,
 				09AB39962DB2DBE6006DE694 /* LaunchesView.swift in Sources */,
+				09AB39A52DB81D56006DE694 /* SocialMediaView.swift in Sources */,
 				09BB6A262DA14944004C07C5 /* RequestManager.swift in Sources */,
 				09BB6A202D82079C004C07C5 /* HomeView.swift in Sources */,
+				09AB39A72DB81E93006DE694 /* RocketSpecificationView.swift in Sources */,
+				09AB399F2DB52632006DE694 /* CountdownView.swift in Sources */,
 				09AB39912DB2D130006DE694 /* CachedValue.swift in Sources */,
 				09BB6A2A2DA149D0004C07C5 /* Endpoint.swift in Sources */,
 				09AB399B2DB2E9CC006DE694 /* LaunchDetailView.swift in Sources */,
@@ -531,6 +555,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		09AB39A82DBC102E006DE694 /* XCRemoteSwiftPackageReference "ReactorKit-SwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gunoooo/ReactorKit-SwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 		09BB6A212D919EFE004C07C5 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Alamofire/Alamofire";
@@ -550,6 +582,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		09AB39A92DBC102E006DE694 /* SwiftUIReactorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 09AB39A82DBC102E006DE694 /* XCRemoteSwiftPackageReference "ReactorKit-SwiftUI" */;
+			productName = SwiftUIReactorKit;
+		};
 		09BB6A222D919EFE004C07C5 /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 09BB6A212D919EFE004C07C5 /* XCRemoteSwiftPackageReference "Alamofire" */;

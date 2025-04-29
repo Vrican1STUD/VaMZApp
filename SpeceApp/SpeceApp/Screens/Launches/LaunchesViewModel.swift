@@ -107,3 +107,83 @@ extension LaunchesViewModel {
     }
     
 }
+
+import ReactorKit
+import Combine
+
+final class LaunchesViewModel2: Reactor {
+    
+    typealias LaunchesState = FetchingState<[LaunchResult], AppError>
+    
+    enum Action {
+        case fetchLaunches
+    }
+    
+    enum Mutation {
+        case didUpdatefetchingState(LaunchesState)
+    }
+    
+    struct State {
+        var fetchingState: LaunchesState = .idle
+    }
+    
+    var initialState: State
+    
+    init(initialState: State) {
+        self.initialState = initialState
+    }
+    
+    func mutate(action: Action) -> Observable<Mutation> {
+        switch action {
+        case .fetchLaunches:
+            return fetchLaunches()
+        }
+    }
+    
+    func reduce(state: State, mutation: Mutation) -> State {
+        var state = state
+        
+        switch mutation {
+        case .didUpdatefetchingState(let fetchingState):
+            state.fetchingState = fetchingState
+        }
+        
+        return state
+    }
+    
+    func fetchLaunches() -> Observable<Mutation> {
+        Observable.concat([
+            .just(.didUpdatefetchingState(.loading)),
+            RequestManager.shared.fetchLaunches2()
+                .map { Mutation.didUpdatefetchingState(.success($0.results)) }
+                .catch { .just(Mutation.didUpdatefetchingState(.error($0 as? AppError ?? .unknown))) }
+        ])
+    }
+    
+}
+
+import SwiftUIReactorKit
+
+struct LaunchesView2: ReactorView {
+    
+    var reactor: LaunchesViewModel2 = .init(initialState: .init(fetchingState: .idle))
+    
+    func body(reactor: LaunchesViewModel2.ObservableObject) -> some SwiftUI.View {
+        content(state: reactor.state.fetchingState)
+    }
+    
+    @ViewBuilder
+    func content(state: LaunchesViewModel2.LaunchesState) -> some SwiftUI.View {
+        switch state {
+        case .loading:
+            ProgressView()
+        case .idle:
+            Text("")
+                .onAppear { reactor.action.onNext(.fetchLaunches) }
+        case .success(let response):
+            Text(response.map { $0.name }.joined(separator: "\n\n") )
+        case .error(_):
+            Text("")
+        }
+    }
+}

@@ -49,8 +49,7 @@ enum SpaceX {
 //        ["format": "json"]
         url.append(queryItems: [.init(name: "format", value: "json")])
         
-        
-        print(url.absoluteString)
+//        print(url.absoluteString)
         return url
     }
 }
