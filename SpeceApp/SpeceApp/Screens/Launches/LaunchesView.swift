@@ -56,7 +56,7 @@ struct LaunchesView: View {
                             // It doesn't need viewmodel because it is just small view that decreases repeating of the code
                             LaunchListView(
                                 launch: launch,
-                                isSaved: viewModel.savedLaunches.contains(launch),
+                                isSaved: CacheManager.shared.savedLaunches.contains(launch),
                                 onTap: { viewModel.selectedLaunchId = launch.id },
                                 onSave: { CacheManager.shared.toggleSavedLaunch(launch) }
                             )

@@ -9,10 +9,6 @@ import Foundation
 import Alamofire
 import Combine
 
-struct Paginacia: Encodable {
-    
-}
-
 extension Session {
     func request(params: SpaceX, id: String? = nil) -> DataRequest {
         var url = params.url()
@@ -95,6 +91,10 @@ final class RequestManager {
     
     func fetchLaunches2() -> Observable<Upcoming> {
         session.request(params: .upcoming).processRx()
+    }
+    
+    func paginate2(url: URL) -> Observable<Upcoming> {
+        session.requestReplaceURL(url: url, params: .upcoming).processRx()
     }
     
     func fetchDetailOfLaunch(id: String) async throws -> LaunchDetailResult {

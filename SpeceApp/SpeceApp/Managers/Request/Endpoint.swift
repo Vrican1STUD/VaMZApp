@@ -18,7 +18,7 @@ enum SpaceX {
         switch self {
         case .countdown: "/v3/launches"
         case .launch: ""
-        case .upcoming: "/2.3.0/launches/upcoming/"
+        case .upcoming: "/2.3.0/launches/"
         }
     }
     
