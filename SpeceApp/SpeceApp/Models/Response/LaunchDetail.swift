@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import SwiftUI
+import MapKit
 
 // MARK: - Upcoming
 struct LaunchDetailResult: Decodable, Equatable, Identifiable {
@@ -13,27 +15,36 @@ struct LaunchDetailResult: Decodable, Equatable, Identifiable {
     let id: String
     let url: String
     let name, /*responseMode,*/ slug: String
-//    let launchDesignator: JSONNull?
-//    let status: NetPrecision
+    //    let launchDesignator: JSONNull?
+    //    let status: NetPrecision
     let net: String?
-//    let netPrecision: NetPrecision
-//    let windowEnd, windowStart: Date
+    //    let netPrecision: NetPrecision
+    //    let windowEnd, windowStart: Date
     let image: LaunchImage
-//    let failreason: String
-//    let hashtag: JSONNull?
-//    let launchServiceProvider: LaunchServiceProvider
+    //    let failreason: String
+    //    let hashtag: JSONNull?
+    //    let launchServiceProvider: LaunchServiceProvider
     let rocket: DetailRocket
-//    let mission: Mission
+    //    let mission: Mission
     let pad: Pad
-//    let webcastLive: Bool
-//    let program: [JSONAny]
-//    let orbitalLaunchAttemptCount, locationLaunchAttemptCount, padLaunchAttemptCount, agencyLaunchAttemptCount: Int
-//    let orbitalLaunchAttemptCountYear, locationLaunchAttemptCountYear, padLaunchAttemptCountYear, agencyLaunchAttemptCountYear: Int
-//    let flightclubURL: JSONNull?
-//    let updates: [Update]
-//    let infoUrls, vidUrls, timeline: [JSONAny]
-//    let padTurnaround: String
-////    let missionPatches: [MissionPatch]
+    //    let webcastLive: Bool
+    //    let program: [JSONAny]
+    //    let orbitalLaunchAttemptCount, locationLaunchAttemptCount, padLaunchAttemptCount, agencyLaunchAttemptCount: Int
+    //    let orbitalLaunchAttemptCountYear, locationLaunchAttemptCountYear, padLaunchAttemptCountYear, agencyLaunchAttemptCountYear: Int
+    //    let flightclubURL: JSONNull?
+    //    let updates: [Update]
+    //    let infoUrls: [InfoURL]
+    let vidUrls: [VidURL]
+    //    let timeline: [JSONAny]
+    //    let padTurnaround: String
+    var formattedNameModel: FormattedNameModel {
+        .init(name: name)
+    }
+    
+    var socailMediaUrls : SocialLinksModel {
+        .init(wikiUrl: rocket.configuration.wikiUrl, vidUrls: vidUrls)
+    }
+    ////    let missionPatches: [MissionPatch]
     ///
     var netDate: Date? {
         guard let net else { return nil }
@@ -42,6 +53,21 @@ struct LaunchDetailResult: Decodable, Equatable, Identifiable {
         let date = formatter.date(from: net)
         
         return date
+    }
+}
+
+struct SocialLinksModel {
+    let wikiUrl: URL?
+    let vidUrls: [URL]
+    
+    init(wikiUrl: String?, vidUrls: [VidURL]) {
+        if let wUrl = wikiUrl {
+            self.wikiUrl = URL(string: wUrl)
+        } else {
+            self.wikiUrl = nil
+        }
+        
+        self.vidUrls = vidUrls.compactMap { URL(string: $0.url) }
     }
 }
 
@@ -148,37 +174,32 @@ struct LaunchDetailResult: Decodable, Equatable, Identifiable {
 //}
 //
 //// MARK: - Mission
-//struct Mission: Codable {
-//    let id: Int
-//    let name, type, description: String
-//    let image: Image
-//    let orbit: NetPrecision
-//    let agencies: [LaunchServiceProvider]
+//struct Mission: Codable, Equatable {
+////    let id: Int
+////    let name, type, description: String
+////    let image: Image
+////    let orbit: NetPrecision
+////    let agencies: [LaunchServiceProvider]
 //    let infoUrls: [InfoURL]
 //    let vidUrls: [VidURL]
 //
-//    enum CodingKeys: String, CodingKey {
-//        case id, name, type, description, image, orbit, agencies
-//        case infoUrls = "info_urls"
-//        case vidUrls = "vid_urls"
-//    }
+////    enum CodingKeys: String, CodingKey {
+////        case id, name, type, description, image, orbit, agencies
+////        case infoUrls = "info_urls"
+////        case vidUrls = "vid_urls"
+////    }
 //}
 //
 //// MARK: - InfoURL
-//struct InfoURL: Codable {
+struct InfoURL: Codable, Equatable {
 //    let priority: Int
 //    let source, title, description: String
 //    let featureImage: JSONNull?
-//    let url: String
+    let url: String
 //    let type: TypeClass
 //    let language: Language
-//
-//    enum CodingKeys: String, CodingKey {
-//        case priority, source, title, description
-//        case featureImage = "feature_image"
-//        case url, type, language
-//    }
-//}
+
+}
 //
 //// MARK: - Language
 //struct Language: Codable {
@@ -213,25 +234,16 @@ struct LaunchDetailResult: Decodable, Equatable, Identifiable {
 //}
 //
 //// MARK: - VidURL
-//struct VidURL: Codable {
+struct VidURL: Codable, Equatable {
 //    let priority: Int
 //    let source, publisher, title, description: String
 //    let featureImage: String
-//    let url: String
+    let url: String
 //    let type: TypeClass
 //    let language: Language
 //    let startTime, endTime: JSONNull?
 //    let live: Bool
-//
-//    enum CodingKeys: String, CodingKey {
-//        case priority, source, publisher, title, description
-//        case featureImage = "feature_image"
-//        case url, type, language
-//        case startTime = "start_time"
-//        case endTime = "end_time"
-//        case live
-//    }
-//}
+}
 //
 //// MARK: - MissionPatch
 //struct MissionPatch: Codable {
@@ -275,7 +287,7 @@ struct Pad: Codable, Equatable {
     let description: String?
 //    let infoURL: JSONNull?
 //    let wikiURL, mapURL: String
-//    let latitude, longitude: Double
+    let latitude, longitude: Double
 //    let country: Country
     let mapImage: String
 //    let totalLaunchCount, orbitalLaunchAttemptCount: Int
@@ -388,7 +400,7 @@ struct RocketConfiguration: Codable, Equatable {
     let reusable: Bool
 ////    let image: Image
 //    let infoURL: String
-    let wikiURL: String?
+    let wikiUrl: String?
     let description, alias: String
     let minStage, maxStage: Float?
     let length: Float?

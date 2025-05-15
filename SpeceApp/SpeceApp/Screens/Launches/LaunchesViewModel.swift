@@ -6,109 +6,10 @@
 //
 
 import SwiftUI
-
-@MainActor
-final class LaunchesViewModel: ObservableObject {
-
-    enum LauchPickerMode: CaseIterable, Identifiable, CustomStringConvertible {
-        case all
-        case saved
-        
-        var id: Self { self }
-
-        var description: String {
-            switch self {
-            case .all: "All"
-            case .saved: "Saved"
-            }
-        }
-    }
-    
-    @Published var fetchingState: FetchingState<[LaunchResult], AppError> = .idle
-    @Published var pickerMode: LauchPickerMode = .all
-    
-    @Published var fetchedLaunches: [LaunchResult] = []
-    @Published var savedLaunches: [LaunchResult] = CacheManager.shared.savedLaunches
-    
-    @Published var selectedLaunchId: String?
-    
-    @Published var paginatingUrl: URL?
-    @Published var isPaginating = false
-    
-    var launches: [LaunchResult] {
-        switch pickerMode {
-        case .all:
-            fetchedLaunches
-        case .saved:
-            fetchedLaunches.filter({ CacheManager.shared.savedLaunches.contains($0) })
-        }
-    }
-}
-
-// MARK: - Public
-
-extension LaunchesViewModel {
-    
-    func fetchLaunches(isPullToRefresh: Bool) async {
-        if isPullToRefresh {
-            try? await Task.sleep(for: .seconds(0.5))
-        } else {
-            fetchingState = .loading
-        }
-        
-        var result: FetchingState<[LaunchResult], AppError>
-        
-        do {
-            let response = try await RequestManager.shared.fetchUpcomingLaunches()
-            paginatingUrl = response.nextPagingUrl
-
-            result = .success(response.results)
-        } catch {
-            print(error.asAFError?.underlyingError?.localizedDescription)
-            result = .error(error as? AppError ?? .unknown)
-        }
-        
-        if isPullToRefresh {
-            try? await Task.sleep(for: .seconds(0.5))
-        }
-        fetchingState = result
-        
-        if let launches = result.successValue, !isPullToRefresh {
-            for launch in launches {
-                if !fetchedLaunches.contains(launch) {
-                    fetchedLaunches.append(launch)
-                }
-            }
-        } else {
-            fetchedLaunches = fetchingState.successValue ?? []
-        }
-    }
-    
-    func paginate() async {
-        guard let paginatingUrl else { return }
-        
-        isPaginating = true
-        do {
-            let response = try await RequestManager.shared.paginate(url: paginatingUrl)
-            self.paginatingUrl = response.nextPagingUrl
-            
-            for launch in response.results {
-                if !fetchedLaunches.contains(launch) {
-                    fetchedLaunches.append(launch)
-                }
-            }
-        } catch {
-            
-        }
-        isPaginating = false
-    }
-    
-}
-
 import ReactorKit
 import Combine
 
-final class LaunchesViewModel2: Reactor {
+final class LaunchesViewModel: Reactor {
     
     typealias LaunchesState = FetchingState<[LaunchResult], AppError>
     
@@ -130,7 +31,10 @@ final class LaunchesViewModel2: Reactor {
         case fetchLaunches(isPullToRefresh: Bool)
         case paginate
         
+        case setSelectedLaunch(LaunchResult?)
+        
         case setPickerMode(LaunchPickerMode)
+        case setRealtimeSavedLaunches([LaunchResult])
     }
     
     enum Mutation {
@@ -138,7 +42,10 @@ final class LaunchesViewModel2: Reactor {
         case didUpdateIsPaginating(Bool)
         case didUpdatePaginatingURL(URL?)
         
+        case didUpdateSelectedLaunch(LaunchResult?)
+        
         case didSetPickerMode(LaunchPickerMode) //set or update
+        case didUpdateRealtimeSavedLaunches([LaunchResult])
         case didUpdateFetchedLaunches([LaunchResult])
     }
     
@@ -146,19 +53,11 @@ final class LaunchesViewModel2: Reactor {
         var fetchingState: LaunchesState = .idle
         var paginatingUrl: URL?
         var isPaginating = false
+        var selectedLaunch: LaunchResult?
         
-        var savedLaunches: [LaunchResult] = CacheManager.shared.savedLaunches
-        
-        var fetchedLaunches: [LaunchResult] = []
         var pickerMode: LaunchPickerMode = .all
-        var launches: [LaunchResult] {
-            switch pickerMode {
-            case .all:
-                fetchedLaunches
-            case .saved:
-                fetchedLaunches.filter({ CacheManager.shared.savedLaunches.contains($0) })
-            }
-        }
+        var savedLaunches: [LaunchResult] = CacheManager.shared.savedLaunches
+        var fetchedLaunches: [LaunchResult] = []
     }
     
     var initialState: State
@@ -167,14 +66,34 @@ final class LaunchesViewModel2: Reactor {
         self.initialState = initialState
     }
     
+    func transform(action: Observable<Action>) -> Observable<Action> {
+        Observable.merge(
+            action,
+            Observable.just(.fetchLaunches(isPullToRefresh: false))
+        )
+    }
+    
+    func transform(mutation: Observable<Mutation>) -> Observable<Mutation> {
+        Observable.merge(
+            mutation,
+            CacheManager.shared.savedLaunchedPublisher.filter { _ in self.currentState.selectedLaunch == nil }.asObservable().map { .didUpdateRealtimeSavedLaunches($0) })
+    }
+    
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .fetchLaunches(let isPullToRefresh):
             return fetchLaunches(isPullToRefresh: isPullToRefresh)
         case .paginate:
             return paginate()
+            
+        case .setSelectedLaunch(let selectedLaunch):
+            return .just(.didUpdateSelectedLaunch(selectedLaunch))
+            
         case .setPickerMode(let mode):
             return .just(.didSetPickerMode(mode))
+        case .setRealtimeSavedLaunches(let savedLaunches):
+            return .just(.didUpdateRealtimeSavedLaunches(savedLaunches))
+        
         }
     }
     
@@ -189,8 +108,14 @@ final class LaunchesViewModel2: Reactor {
         case .didUpdatePaginatingURL(let paginatingURL):
             state.paginatingUrl = paginatingURL
             
+        case .didUpdateSelectedLaunch(let selectedLaunch):
+            state.selectedLaunch = selectedLaunch
+            
         case .didSetPickerMode(let mode):
             state.pickerMode = mode
+        case .didUpdateRealtimeSavedLaunches(let savedLaunches):
+            guard currentState.selectedLaunch == nil else { break }
+            state.savedLaunches = savedLaunches
         case .didUpdateFetchedLaunches(let fetchedLaunches):
             state.fetchedLaunches = fetchedLaunches
         }
@@ -201,16 +126,22 @@ final class LaunchesViewModel2: Reactor {
     func fetchLaunches(isPullToRefresh: Bool) -> Observable<Mutation> {
         let delayDuration = isPullToRefresh ? 1.8 : 0.0
         
+        let loadingPublisher: Observable<Mutation> = {
+            if !isPullToRefresh {
+                Observable.just(Mutation.didUpdatefetchingState(.loading))
+            } else {
+                Observable.just(.didUpdatefetchingState(currentState.fetchingState)).delay(.milliseconds(500), scheduler: MainScheduler.instance)
+            }
+        }()
+        
         return Observable.concat([
-            Observable<Void>.just(())
-                .delay(.milliseconds(Int(delayDuration * 1000)), scheduler: MainScheduler.instance)
-                .map { Mutation.didUpdatefetchingState(.loading) },
-            
-            RequestManager.shared.fetchLaunches2()
+            loadingPublisher,
+            RequestManager.shared.fetchLaunches()
                 .flatMap { response -> Observable<Mutation> in
                     let stateMutation = Mutation.didUpdatefetchingState(.success(response.results))
                     let launchesMutation = Mutation.didUpdateFetchedLaunches(response.results)
                     let urlMutation = Mutation.didUpdatePaginatingURL(response.nextPagingUrl)
+                    
                     return Observable.from([stateMutation, launchesMutation, urlMutation])
                 }
                 .catch { error in
@@ -227,7 +158,7 @@ final class LaunchesViewModel2: Reactor {
         return Observable.concat([
             Observable.just(Mutation.didUpdateIsPaginating(true)),
             
-            RequestManager.shared.paginate2(url: url)
+            RequestManager.shared.paginate(url: url)
                 .flatMap { response in
                     var combinedResults = self.currentState.fetchedLaunches
                     for launch in response.results {
@@ -251,128 +182,27 @@ final class LaunchesViewModel2: Reactor {
     }
 }
 
-import SwiftUIReactorKit
 
-struct LaunchesView2: ReactorView {
-    
-    var reactor: LaunchesViewModel2 = .init(initialState: .init(fetchingState: .idle))
-    
-    func body(reactor: LaunchesViewModel2.ObservableObject) -> some SwiftUI.View {
-        content(state: reactor.state)
-    }
-    
-    @ViewBuilder
-    func content(state: LaunchesViewModel2.State) -> some SwiftUI.View {
-        switch state.fetchingState {
-        case .loading:
-            ProgressView()
-                .controlSize(.large)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .tint(.Text.primary)
-        case .idle:
-            //EmptyView is not working, so I had to use Text
-            Text("")
-                .onAppear { reactor.action.onNext(.fetchLaunches(isPullToRefresh: false)) }
-        case .success(let response):
-            VStack {
-                Picker("Launch Type", selection: Binding(
-                    get: { state.pickerMode },
-                    set: { newValue in reactor.action.onNext(.setPickerMode(newValue)) }
-                )) {
-                    ForEach(LaunchesViewModel2.LaunchPickerMode.allCases) { mode in
-                        Text(mode.description).tag(mode.id)
+extension Publisher {
+    func asObservable() -> Observable<Output> {
+        Observable.create { observer in
+            let cancellable = self.sink(
+                receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        observer.onError(error)
+                    } else {
+                        observer.onCompleted()
                     }
+                },
+                receiveValue: {
+                    observer.onNext($0)
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                
-                if state.launches.isEmpty {
-                    emptyView
-                } else {
-                    ScrollView {
-                        LazyVStack {
-                            ForEach(state.launches) { launch in
-                                // It doesn't need viewmodel because it is just small view that decreases repeating of the code
-                                LaunchListView(
-                                    launch: launch,
-                                    isSaved: CacheManager.shared.savedLaunches.contains(launch),
-                                    onTap: {},
-                                    onSave: { CacheManager.shared.toggleSavedLaunch(launch) }
-                                )
-                                .padding(.horizontal)
-                                .onAppear {
-                                    if launch == state.launches.last {
-                                        reactor.action.onNext(.paginate)
-                                    }
-                                }
-                            }
-                            
-                            if state.isPaginating {
-                                ProgressView()
-                            }
-                        }
-                        .padding(.vertical)
-                    }
-                    .scrollIndicators(.hidden)
-                    .refreshable { reactor.action.onNext(.fetchLaunches(isPullToRefresh: true)) }
-                    .scrollContentBackground(.hidden)
-                }
+            )
+            
+            return Disposables.create {
+                cancellable.cancel()
             }
-//            .onReceive(CacheManager.shared.savedLaunchedPublisher) {
-//                viewModel.savedLaunches = $0
-//            }
-        case .error(let error):
-            errorView(error: error)
         }
-    }
-    
-    @ViewBuilder
-    var emptyView: some SwiftUI.View {
-        VStack {
-            Spacer()
-            Image(.astronaut)
-            
-            switch reactor.currentState.pickerMode {
-            case .all:
-                Text("No available launches")
-            case .saved:
-                Text("No saved Launches")
-            }
-            
-            Spacer()
-        }
-        .frame(maxHeight: .infinity, alignment: .center)
-    }
-    
-    
-    func errorView(error: AppError) -> some SwiftUI.View {
-        VStack(spacing: 24) {
-            Spacer()
-            
-            Image(.astronaut)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 60)
-                .padding(.bottom, 32)
-            
-            Text(error.localizedDescription)
-                .multilineTextAlignment(.center)
-            
-            Button {
-                reactor.action.onNext(.fetchLaunches(isPullToRefresh: true))
-//                Task { Task { await viewModel.fetchLaunches(isPullToRefresh: false) } }
-            } label: {
-                Text("Retry")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .frame(height: 60)
-                    .background(Color.App.Button.normal)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.scaled)
-            
-            Spacer()
-        }
-        .frame(maxHeight: .infinity, alignment: .center)
-        .padding()
+
     }
 }

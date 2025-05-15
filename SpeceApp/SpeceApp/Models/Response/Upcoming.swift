@@ -19,12 +19,11 @@ struct Upcoming: Decodable, Equatable {
     }
 }
 
-struct LaunchResult: Codable, Equatable, Identifiable {
+struct LaunchResult: Codable, Equatable, Identifiable, Hashable {
     
     let id: String
     let url: String
     let name: String
-//        let responseMode: LocationResponseMode
     let slug: String
     //    let launchDesignator: JSONNull?
     //    let status: NetPrecision
@@ -32,18 +31,6 @@ struct LaunchResult: Codable, Equatable, Identifiable {
     //    let netPrecision: NetPrecision
     let windowEnd, windowStart: String?
     let image: LaunchImage?
-    //    let infographic, probability, weatherConcerns: JSONNull?
-    let failreason: String
-    //    let hashtag: JSONNull?
-    //    let launchServiceProvider: LaunchServiceProvider
-    //    let rocket: Rocket
-    //    let mission: Mission
-    //    let pad: Pad
-    let webcastLive: Bool
-//        let program: [Program]
-    let orbitalLaunchAttemptCount: Int?
-//    locationLaunchAttemptCount, padLaunchAttemptCount, agencyLaunchAttemptCount: Int
-//    let orbitalLaunchAttemptCountYear, locationLaunchAttemptCountYear, padLaunchAttemptCountYear, agencyLaunchAttemptCountYear: Int
     
     var netString: String? {
         guard let net else { return nil }
@@ -53,13 +40,50 @@ struct LaunchResult: Codable, Equatable, Identifiable {
         
         return date?.string(format: .ddMMYYYY)
     }
-//
+    
+    var netDate: Date? {
+        guard let net else { return nil }
+        
+        let formatter = ISO8601DateFormatter()
+        let date = formatter.date(from: net)
+        
+        return date
+    }
+    
+    // Needed for Hashable
+    static func == (lhs: LaunchResult, rhs: LaunchResult) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    var formattedNameModel: FormattedNameModel {
+        .init(name: name)
+    }
+}
+
+struct FormattedNameModel {
+    let name: String
+    let mission: String
+    
+    init(name: String) {
+        let components = name.components(separatedBy: " | ")
+        self.name = components.first ??  "-"
+        self.mission = components.last ?? "-"
+    }
 }
 
 struct LaunchImage: Codable, Equatable {
+    let imageUrl: String
     let thumbnailUrl: String
     
-    var imageUrl: URL? {
+    var imageBigUrl: URL? {
+        URL(string: imageUrl)
+    }
+    
+    var imageThumbnailUrl: URL? {
         URL(string: thumbnailUrl)
     }
 }

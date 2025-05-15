@@ -1,5 +1,5 @@
 //
-//  SpeceAppApp.swift
+//  AppDelegate.swift
 //  SpeceApp
 //
 //  Created by Peter on 12/03/2025.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct SpeceAppApp: App {
+struct AppDelegate: App {
     
     init() {
 //        UITabBar.setTabBarAppearance()
@@ -17,7 +17,7 @@ struct SpeceAppApp: App {
     
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            TabBarView()
                 .tint(.Text.primary)
         }
     }

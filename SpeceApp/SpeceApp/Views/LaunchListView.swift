@@ -26,14 +26,14 @@ struct LaunchListView: View {
     
     var label: some View {
         HStack(alignment: .center) {
-            if let imageUrl = launch.image?.imageUrl {
+            if let imageUrl = launch.image?.imageThumbnailUrl {
                 KFImage(imageUrl)
                     .placeholder({ ProgressView() })
                     .resizable()
                     .scaledToFill()
                     .frame(width: 70)
                     .clipped()
-            } 
+            }
             else {
                 Image(.astronaut)
                     .resizable()
@@ -42,9 +42,17 @@ struct LaunchListView: View {
             }
             VStack {
                 VStack(alignment: .leading) {
-                    Text(launch.name)
+
+                    Text(launch.formattedNameModel.name)
+//                        .font(.footnote)
+                        .fontWeight(.bold)
                         .foregroundStyle(Color.Text.primary)
-                        .bold()
+                    
+                    Text(launch.formattedNameModel.mission)
+//                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.Text.info)
+                    
                     if let net = launch.netString {
                         Text(net)
                             .foregroundStyle(Color.Text.parameters)
@@ -61,7 +69,7 @@ struct LaunchListView: View {
                     .frame(width: 20, height: 20)
                     .foregroundStyle(.red)
                     .padding(20)
-//                    .id(isSaved)
+                    .id(isSaved)
             }
             .animation(.bouncy, value: isSaved)
             .onTapGesture { onSave() }
@@ -76,7 +84,8 @@ struct LaunchListView: View {
 
 #Preview {
     LaunchListView(
-        launch: LaunchResult(id: "", url: "", name: "FalconSat", slug: "", lastUpdated: "", net: "2025-04-03T22:54:00Z", windowEnd: "", windowStart: "", image: LaunchImage(thumbnailUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png"), failreason: "", webcastLive: true, orbitalLaunchAttemptCount: 2), 
+        launch: LaunchResult(id: "", url: "", name: "FalconSat", slug: "", lastUpdated: "", net: "2025-04-03T22:54:00Z", windowEnd: "", windowStart: "", image: LaunchImage(imageUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png",
+            thumbnailUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png")),
         isSaved: false,
         onTap: { print("Ahoj") },
         onSave: {}

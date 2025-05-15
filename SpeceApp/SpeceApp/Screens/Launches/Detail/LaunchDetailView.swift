@@ -5,40 +5,41 @@
 //  Created by Ja on 18/04/2025.
 //
 
-import SwiftUI
+import SwiftUIReactorKit
 import Kingfisher
 
-//TODO: Gesture doesn't work
-struct LaunchDetailView: View {
-    @ObservedObject var viewModel = LaunchDetailViewModel()
+@MainActor
+struct LaunchDetailView: ReactorView {
     
-    @State var isSaved: Bool
-    let id: String
-    let onSave: () -> Void
     @Environment(\.dismiss) var dismiss
     
-    var body: some View {
+    var reactor: LaunchDetailViewModel
+    
+    func body(reactor: LaunchDetailViewModel.ObservableObject) -> some SwiftUI.View {
+        content(state: reactor.state)
+    }
+    
+    @ViewBuilder
+    func content(state: LaunchDetailViewModel.State) -> some SwiftUI.View {
         VStack {
-            switch viewModel.fetchingState {
+            switch state.fetchingState {
             case .idle:
                 EmptyView()
-                Text("empty")
-                
+                //                Text("empty")
+                //                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .loading:
                 ProgressView()
                     .controlSize(.large)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .tint(.Text.primary)
-                
             case .success:
-                if let rocketDetail = viewModel.fetchingState.successValue {
+                if let rocketDetail = state.fetchingState.successValue {
                     ScrollView {
                         VStack {
-                            KFImage(rocketDetail.image.imageUrl)
-                            //                .placeholder({ ProgressView() })
+                            KFImage(rocketDetail.image.imageBigUrl)
                                 .resizable()
                                 .scaledToFill()
-                                .frame(height: 300)
+                                .frame(minHeight: 300)
                                 .ignoresSafeArea(edges: .top)
                                 .clipped()
                                 .overlay(alignment: .bottom) {
@@ -47,33 +48,39 @@ struct LaunchDetailView: View {
                                     )
                                 }
                                 .overlay(alignment: .bottom) {
-                                HStack {
-                                    Text(rocketDetail.name)
-                                        .font(.title)
-                                        .bold()
-                                    VStack {
-                                        Image(systemName: isSaved ? "bell.fill" : "bell")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .transition(.scale.combined(with: .opacity))
-                                            .frame(width: 30)
-                                            .foregroundStyle(.red)
-                                            .padding(.leading)
+                                    HStack() {
+                                        VStack(alignment: .leading) {
+                                            Text(rocketDetail.formattedNameModel.name)
+                                                .font(.title)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(Color.Text.primary)
+                                            Text(rocketDetail.formattedNameModel.mission)
+                                                .font(.title)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(Color.Text.info)
+                                        }
+                                        Spacer()
+                                        VStack {
+                                            Image(systemName: reactor.currentState.isSaved ? "bell.fill" : "bell")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .transition(.scale.combined(with: .opacity))
+                                                .frame(width: 30)
+                                                .foregroundStyle(.red)
+                                                .padding(.leading)
+                                                .id(reactor.currentState.isSaved)
+                                        }
+                                        .animation(.bouncy, value: reactor.currentState.isSaved )
+                                        .onTapGesture { reactor.action.onNext(.toggleSavedLaunch) }
                                     }
-                                    .animation(.bouncy, value: isSaved)
-                                    .onTapGesture { 
-                                        onSave()
-                                        isSaved = !isSaved
-                                    }
-                                }
+                                    .padding(16)
                                     .frame(maxWidth: .infinity)
-                            }
+                                }
                         }
                         
                         VStack (spacing: 16) {
-                            Text(viewModel.countdownText)
-                            //                            CountdownView(days: viewModel.days, hours: viewModel.hours, minutes: viewModel.minutes)
-                            SocialMediaView()
+                            CountdownView(remainingTime: state.remainingTime)
+                            SocialMediaView(socialMediaUrls: rocketDetail.socailMediaUrls)
                             Text(rocketDetail.rocket.configuration.name)
                                 .font(.title)
                                 .bold()
@@ -95,33 +102,35 @@ struct LaunchDetailView: View {
                                 .frame(maxWidth: .infinity, alignment: . leading)
                                 .font(.footnote)
                                 .foregroundStyle(Color.Text.parameters)
-                            Button (action: /*@START_MENU_TOKEN@*/{}/*@END_MENU_TOKEN@*/, label: {
-                                KFImage(URL( string: rocketDetail.pad.mapImage))
-                                //                .placeholder({ ProgressView() })
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxHeight: 200)
-                                    .clipped()
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                            })
+                            Button (
+                                action: { },
+                                label: {
+                                    KFImage(URL( string: rocketDetail.pad.mapImage))
+                                    //                .placeholder({ ProgressView() })
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxHeight: 200)
+                                        .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                })
                         }
                         .padding(16)
                     }
+                    .onAppear {
+                        reactor.action.onNext(.updateCountdownNow)
+                    }
                 }
             case .error(let error):
-                //                errorView(error: error)
-                Text("error")
+                errorView(error: error)
             }
-            
         }
         .scrollIndicators(.hidden)
-        //        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .navigationBar)
+        //        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden()
         .ignoresSafeArea(edges: .top)
         .overlay(alignment: .topLeading) {
             Button {
                 dismiss()
-                viewModel.fetchingState = .idle
             } label: {
                 HStack {
                     Image(systemName: "xmark")
@@ -134,36 +143,53 @@ struct LaunchDetailView: View {
                 }
             }
             .padding(16)
+        }
+    }
+    
+    func errorView(error: AppError) -> some SwiftUI.View {
+        VStack(spacing: 24) {
+            Spacer()
             
+            Image(.astronaut)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60)
+                .padding(.bottom, 32)
+            
+            Text(error.localizedDescription)
+                .multilineTextAlignment(.center)
+            
+            Button {
+                reactor.action.onNext(.refreshLaunchDetail)
+            } label: {
+                Text("Retry")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(height: 60)
+                    .background(Color.App.Button.normal)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.scaled)
+            
+            Spacer()
         }
-        .onAppear {
-            viewModel.fetchData(id: id)
-        }
-        .onDisappear {
-            viewModel.deleteTasks()
-        }
-//        .task {
-//            guard !viewModel.fetchingState.isSuccess else { return }
-////            viewModel.fetchingState = .idle
-//            await viewModel.fetchDetail(isPullToRefresh: false, id: id)
-//        }
+        .frame(maxHeight: .infinity, alignment: .center)
+        .padding()
     }
-    
 }
 
-#Preview {
-    LaunchDetailView(isSaved: true,
-                     id: "84a2a107-1e44-4994-ad9f-430ee81a741a",
-                     onSave: {})
-}
+//#Preview {
+//    LaunchDetailView(isSaved: true,
+//                     id: "84a2a107-1e44-4994-ad9f-430ee81a741a",
+//                     onSave: {})
+//}
 
-extension UINavigationController: UIGestureRecognizerDelegate {
-    override open func viewDidLoad() {
-        super.viewDidLoad()
-        interactivePopGestureRecognizer?.delegate = self
-    }
-    
-    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        return viewControllers.count > 1
-    }
-}
+//extension UINavigationController: UIGestureRecognizerDelegate {
+//    override open func viewDidLoad() {
+//        super.viewDidLoad()
+//        interactivePopGestureRecognizer?.delegate = self
+//    }
+//
+//    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+//        return viewControllers.count > 1
+//    }
+//}

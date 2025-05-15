@@ -5,155 +5,111 @@
 //  Created by Ja on 22/04/2025.
 //
 
-import Foundation
-
 import SwiftUI
 import Combine
+import ReactorKit
 
-@MainActor
-final class LaunchDetailViewModel: ObservableObject {
+final class LaunchDetailViewModel: Reactor {
     
-    @Published var fetchingState: FetchingState<LaunchDetailResult, AppError> = .idle
-    @Published var days: Int = 0
-    @Published var hours: Int = 0
-    @Published var minutes: Int = 0
+    typealias LaunchesState = FetchingState<LaunchDetailResult, AppError>
     
-    @Published var now: Date = Date()
-    private var timer: Timer?
-    
-    private var tasks: [Task<Void, Never>] = []
-    private var cancellables: Set<AnyCancellable> = .init()
-    
-    var countdownText: String {
-        let calendar = Calendar.current
-        
-        let timeComponens: [Calendar.Component] =
-        [
-            .year, .month, .day, .hour, .minute, .second
-        ]
-        
-        return timeComponens
-            .map { component -> String in
-            "\(calendar.component(component, from: now))"
-        }
-        .joined(separator: " : ")
-
+    enum Action {
+        case fetchLaunchDetail(id: String)
+        case refreshLaunchDetail
+        case toggleSavedLaunch
+        case updateCountdownNow
     }
     
-    //    @Published var fetchedDetail: LaunchDetailResult = []
-    //    @Published var savedLaunches: [LaunchResult] = CacheManager.shared.savedLaunches
-}
-
-// MARK: - Public
-
-extension LaunchDetailViewModel {
+    enum Mutation {
+        case didUpdatefetchingState(LaunchesState)
+        case didToggleSavedState
+        case didUpdateRemainingTime(Double)
+    }
     
-    func startTimer() {
-        Timer.publish(every: 1, on: .main, in: .common)
+    struct State {
+        var fetchingState: LaunchesState = .idle
+        let launch: LaunchResult
+        var isSaved: Bool
+        
+        var remainingTime: Double = 0.0
+    }
+    
+    var initialState: State
+    
+    private var timerCancellable: AnyCancellable?
+    
+    init(launch: LaunchResult) {
+        self.initialState = State(fetchingState: .loading, launch: launch, isSaved: CacheManager.shared.savedLaunches.contains(launch))
+    }
+    
+    func transform(action: Observable<Action>) -> Observable<Action> {
+    
+        return Observable.merge(
+            action,
+            Observable.just(.fetchLaunchDetail(id: currentState.launch.id))
+        )
+    }
+    
+    func transform(mutation: Observable<Mutation>) -> Observable<Mutation> {
+        let publisher = Timer
+            .publish(every: 1, on: .main, in: .common)
             .autoconnect()
-            .eraseToAnyPublisher()
-            .sink(receiveValue: { [weak self] _ in
-                guard let self else { return }
-                now.addTimeInterval(-1)
-            })
-            .store(in: &cancellables)
-    }
-    
-    func fetchData(id: String) {
-        fetchingState = .loading
-        cancellables.removeAll()
-        RequestManager.shared.fetchLaunchDetail(id: id)
-            .sink(receiveCompletion: { [weak self] completion in
-                switch completion {
-                case .finished:
-                    break
-                case .failure(let error):
-                    self?.fetchingState = .error(error)
-                }
-            }, receiveValue: { [weak self] in
-                self?.fetchingState = .success($0)
-                self?.now = $0.netDate ?? .now
-                self?.startTimer()
-            })
-            .store(in: &cancellables)
-    }
-    
-    func fetchDetail(isPullToRefresh: Bool, id: String) {
-        let fetchingTask = Task { [weak self] in
-            guard let self else { return }
-            
-            if isPullToRefresh {
-                try? await Task.sleep(for: .seconds(0.5))
-            } else {
-                fetchingState = .loading
-            }
-            
-            var result: FetchingState<LaunchDetailResult, AppError>
-            
-            do {
-                let response = try await RequestManager.shared.fetchDetailOfLaunch(id: id)
-                result = .success(response)
-                
-                //            self.now = Date()
-                //            if let launchDate = response.netDate {
-                //                let components = Calendar.current.dateComponents([.day, .hour, .minute], from: self.now, to: launchDate)
-                //                self.days = components.day ?? 0
-                //                self.hours = components.hour ?? 0
-                //                self.minutes = components.minute ?? 0
-                //            }
-                //
-                //            let calendar = Calendar.current
-                //            let nextMinute = calendar.nextDate(after: now, matching: DateComponents(second: 0), matchingPolicy: .strict)!
-                //            let delay = nextMinute.timeIntervalSince(now)
-                
-                //            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                //                self?.startRepeatingTimer()
-                //            }
-                //
-            } catch {
-                print(error.asAFError?.underlyingError?.localizedDescription)
-                result = .error(error as? AppError ?? .unknown)
-            }
-            
-            fetchingState = result
-        }
+            .compactMap { [weak self] _ in self?.currentState.fetchingState.successValue?.netDate }
+            .asObservable()
         
-        tasks.append(fetchingTask)
+        return Observable.merge(
+            mutation,
+            CacheManager.shared.savedLaunchedPublisher.asObservable().map { _ in .didToggleSavedState },
+            publisher.map { .didUpdateRemainingTime($0.timeIntervalSinceNow) }
+        )
     }
     
-    func deleteTasks() {
-        tasks.forEach { $0.cancel() }
-        tasks = []
+    func mutate(action: Action) -> Observable<Mutation> {
+        switch action {
+        case .fetchLaunchDetail(let id):
+            return fetchDetail(id: id)
+            
+        case .refreshLaunchDetail:
+            return fetchDetail(id: currentState.launch.id)
+            
+        case .toggleSavedLaunch:
+            CacheManager.shared.toggleSavedLaunch(currentState.launch)
+            return Observable.never()
+        case .updateCountdownNow:
+            return Observable.just(Mutation.didUpdateRemainingTime(currentState.launch.netDate?.timeIntervalSinceNow ?? 0.0))
+        }
     }
     
-//    func startRepeatingTimer() {
-//        self.now = Date() // Fire once immediately
-//        
-//        
-//        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-//            if let me = self {
-//                me.now = Date()
-//                switch me.fetchingState {
-//                case .success:
-//                    if let launchDate = me.fetchingState.successValue?.netDate {
-//                        let components = Calendar.current.dateComponents([.day, .hour, .minute], from: me.now, to: launchDate)
-//                        me.days = components.day ?? 0
-//                        me.hours = components.hour ?? 0
-//                        me.minutes = components.minute ?? 0
-//                        print(launchDate)
-//                        print(me.now)
-//                    }
-//                case .loading:
-//                    print("")
-//                case .idle:
-//                    print("")
-//                case .error(_):
-//                    print("")
-//                }
-//            }
-//            
-//            
-//        }
-//    }
+    func reduce(state: State, mutation: Mutation) -> State {
+        var state = state
+        
+        switch mutation {
+        case .didUpdatefetchingState(let fetchingState):
+            state.fetchingState = fetchingState
+            
+        case .didToggleSavedState:
+            state.isSaved = CacheManager.shared.savedLaunches.contains(currentState.launch)
+            
+        case .didUpdateRemainingTime(let remainingTime):
+            state.remainingTime = remainingTime
+        }
+        return state
+    }
+    
+    func fetchDetail(id: String) -> Observable<Mutation> {
+        return Observable.concat([
+            Observable<Void>.just(())
+                .map { Mutation.didUpdatefetchingState(.loading) },
+            
+            RequestManager.shared.fetchDetailOfLaunch(id: id)
+                .flatMap { response -> Observable<Mutation> in
+                    let stateMutation = Mutation.didUpdatefetchingState(.success(response))
+                    return Observable.from([stateMutation])
+                }
+                .catch { error in
+                    Observable.just(Mutation.didUpdatefetchingState(.error(error as? AppError ?? .unknown)))
+                }
+        ])
+    }
+    
 }
-

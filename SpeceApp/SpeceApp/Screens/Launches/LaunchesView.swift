@@ -7,100 +7,113 @@
 
 import SwiftUI
 
-struct LaunchesView: View {
-    
-    @ObservedObject var viewModel = LaunchesViewModel()
-    
-    var body: some View {
-        VStack {
-            switch viewModel.fetchingState {
-            case .idle:
-                EmptyView()
-                
-            case .loading:
-                ProgressView()
-                    .controlSize(.large)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .tint(.Text.primary)
-                
-            case .success:
-                content(viewModel.launches)
+//Problems: TODOs, Dependency injection, Tide up
 
-            case .error(let error):
-                errorView(error: error)
-            }
-        }
-        .background(Color.App.background)
-        .task {
-            guard !viewModel.fetchingState.isSuccess else { return }
-            await viewModel.fetchLaunches(isPullToRefresh: false)
-        }
+import SwiftUIReactorKit
+
+struct LaunchesView: ReactorView {
+    
+    var reactor: LaunchesViewModel
+    
+    func body(reactor: LaunchesViewModel.ObservableObject) -> some SwiftUI.View {
+        content(state: reactor.state)
     }
     
-    func content(_ launches: [LaunchResult]) -> some View {
+    @ViewBuilder
+    func content(state: LaunchesViewModel.State) -> some SwiftUI.View {
         VStack {
-            Picker("Launch Type", selection: $viewModel.pickerMode) {
-                ForEach(LaunchesViewModel.LauchPickerMode.allCases) { mode in
+            // TODO: Strange picker bug
+            Picker("Launch Type", selection: reactor.binding(for: \.pickerMode, set: { .setPickerMode($0) })) {
+                ForEach(LaunchesViewModel.LaunchPickerMode.allCases) { mode in
                     Text(mode.description).tag(mode.id)
                 }
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
             
-            if launches.isEmpty {
+            switch state.pickerMode {
+            case .all:
+                handleLoadingOfLaunches(state: state)
+            case .saved:
+                if state.savedLaunches.isEmpty {
+                    emptyView
+                } else {
+                    ScrollView {
+                        LazyVStack {
+                            fillLaunchesList(launches: state.savedLaunches, reactor: reactor)
+                        }
+                        .padding(.vertical)
+                    }
+                    .scrollIndicators(.hidden)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+        }
+        .navigationDestination(item: reactor.binding(for: \.selectedLaunch, set: {.setSelectedLaunch($0)}), destination: {launch in
+            LaunchDetailView(reactor: .init(launch: launch))
+        })
+    }
+    
+    @ViewBuilder
+    func handleLoadingOfLaunches( state: LaunchesViewModel.State ) -> some SwiftUI.View {
+        switch state.fetchingState {
+        case .loading:
+            ProgressView()
+                .controlSize(.large)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .tint(.Text.primary)
+        case .idle:
+            //EmptyView is not working, so I had to use Text
+            Text("")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .success(_):
+            if state.fetchedLaunches.isEmpty {
                 emptyView
             } else {
                 ScrollView {
                     LazyVStack {
-                        ForEach(launches) { launch in
-                            // It doesn't need viewmodel because it is just small view that decreases repeating of the code
-                            LaunchListView(
-                                launch: launch,
-                                isSaved: CacheManager.shared.savedLaunches.contains(launch),
-                                onTap: { viewModel.selectedLaunchId = launch.id },
-                                onSave: { CacheManager.shared.toggleSavedLaunch(launch) }
-                            )
-                            .padding(.horizontal)
+                        fillLaunchesList(launches: state.fetchedLaunches, reactor: reactor)
+                        Color.clear
+                            .frame(height: 1)
                             .onAppear {
-                                if launch == launches.last {
-                                    Task {
-                                        await viewModel.paginate()
-                                    }
-                                }
+                                reactor.action.onNext(.paginate)
                             }
-                        }
-                        
-                        if viewModel.isPaginating {
+                        if state.isPaginating {
                             ProgressView()
                         }
                     }
                     .padding(.vertical)
                 }
                 .scrollIndicators(.hidden)
-                .refreshable { await viewModel.fetchLaunches(isPullToRefresh: true) }
+                .refreshable { reactor.action.onNext(.fetchLaunches(isPullToRefresh: true)) }
                 .scrollContentBackground(.hidden)
-                .navigationDestination(item: $viewModel.selectedLaunchId) { id in
-                    //TODO: chnge to viewmodel
-                    if let launchWithDetail = launches.first(where: { $0.id == id }) {
-                        LaunchDetailView(isSaved: CacheManager.shared.savedLaunches.contains(launchWithDetail),
-                                         id: id,
-                                         onSave: { CacheManager.shared.toggleSavedLaunch(launchWithDetail)})
-                    }
-                }
             }
+        case .error(let error):
+            errorView(error: error)
         }
-        .onReceive(CacheManager.shared.savedLaunchedPublisher) {
-            viewModel.savedLaunches = $0
+    }
+    
+    func fillLaunchesList( launches: [LaunchResult], reactor: LaunchesViewModel ) -> some SwiftUI.View {
+        ForEach(launches) { launch in
+            LaunchListView(
+                launch: launch,
+                isSaved: CacheManager.shared.savedLaunches.contains(launch),
+                onTap: { reactor.action.onNext(.setSelectedLaunch(launch)) },
+                onSave: {
+                    CacheManager.shared.toggleSavedLaunch(launch)
+                }
+            )
+            .padding(.horizontal)
         }
     }
     
     @ViewBuilder
-    var emptyView: some View {
+    var emptyView: some SwiftUI.View {
         VStack {
             Spacer()
             Image(.astronaut)
             
-            switch viewModel.pickerMode {
+            switch reactor.currentState.pickerMode {
             case .all:
                 Text("No available launches")
             case .saved:
@@ -112,7 +125,8 @@ struct LaunchesView: View {
         .frame(maxHeight: .infinity, alignment: .center)
     }
     
-    func errorView(error: AppError) -> some View {
+    
+    func errorView(error: AppError) -> some SwiftUI.View {
         VStack(spacing: 24) {
             Spacer()
             
@@ -126,7 +140,7 @@ struct LaunchesView: View {
                 .multilineTextAlignment(.center)
             
             Button {
-                Task { Task { await viewModel.fetchLaunches(isPullToRefresh: false) } }
+                reactor.action.onNext(.fetchLaunches(isPullToRefresh: true))
             } label: {
                 Text("Retry")
                     .frame(maxWidth: .infinity, alignment: .center)
