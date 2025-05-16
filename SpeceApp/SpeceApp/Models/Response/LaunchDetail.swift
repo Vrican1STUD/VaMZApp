@@ -54,6 +54,23 @@ struct LaunchDetailResult: Decodable, Equatable, Identifiable {
         
         return date
     }
+    
+    var padLocation: MapPointLocation {
+        .init(name: formattedNameModel.name, coordinate: CLLocationCoordinate2D(latitude: pad.latitude, longitude: pad.longitude))
+    }
+}
+
+struct MapPointLocation: Identifiable, Equatable {
+    
+    static func == (lhs: MapPointLocation, rhs: MapPointLocation) -> Bool {
+        lhs.coordinate.longitude == rhs.coordinate.longitude &&
+        lhs.coordinate.latitude == rhs.coordinate.latitude
+    }
+    
+    var id: String { name + coordinate.latitude.description + coordinate.longitude.description }
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+    
 }
 
 struct SocialLinksModel {

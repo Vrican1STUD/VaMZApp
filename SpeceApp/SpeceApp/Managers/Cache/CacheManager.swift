@@ -6,12 +6,16 @@
 //
 
 import Foundation
+import Combine
 
 final class CacheManager {
     
     static let shared = CacheManager()
     
     private init() {}
+    
+    let navigationSubject = PassthroughSubject<NavigationTarget, Never>()
+    private(set) lazy var navigationPublisher = navigationSubject.eraseToAnyPublisher()
     
     @CachedValue("savedLaunches") var savedLaunches: [LaunchResult] = []
     private(set) lazy var savedLaunchedPublisher = $savedLaunches.share().eraseToAnyPublisher()
@@ -27,4 +31,18 @@ final class CacheManager {
     func removeSavedLaunches() {
         savedLaunches = []
     }
+    
+    func navigateTo(_ launch: LaunchResult) {
+        navigationSubject.send(.launch(launch))
+    }
+    
+    func navigateToMapAndShow(_ mapPointLocation: MapPointLocation) {
+        navigationSubject.send(.map(mapPointLocation))
+    }
 }
+
+enum NavigationTarget {
+    case launch(LaunchResult)
+    case map(MapPointLocation)
+}
+

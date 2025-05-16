@@ -13,6 +13,8 @@ import SwiftUIReactorKit
 
 struct LaunchesView: ReactorView {
     
+    @State var searchQuery: String = ""
+    
     var reactor: LaunchesViewModel
     
     func body(reactor: LaunchesViewModel.ObservableObject) -> some SwiftUI.View {
@@ -72,6 +74,18 @@ struct LaunchesView: ReactorView {
             } else {
                 ScrollView {
                     LazyVStack {
+                        let launch = LaunchResult(id: "7b685ef7-f610-413f-bd4a-cc58aed97be2", url: "", name: "TestLaunch", slug: "", lastUpdated: "", net: Date().addingTimeInterval(30).ISO8601Format().uppercased(), windowEnd: "", windowStart: "", image: LaunchImage(imageUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png",
+                            thumbnailUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png"))
+                        LaunchListView(
+                            launch: launch,
+                            isSaved: CacheManager.shared.savedLaunches.contains(launch),
+                            onTap: { reactor.action.onNext(.setSelectedLaunch(launch)) },
+                            onSave: {
+                                CacheManager.shared.toggleSavedLaunch(launch)
+                                NotificationManager.shared.toggleLaunchNotification(launch: launch)
+                            }
+                        )
+                        .padding(.horizontal)
                         fillLaunchesList(launches: state.fetchedLaunches, reactor: reactor)
                         Color.clear
                             .frame(height: 1)
@@ -101,6 +115,7 @@ struct LaunchesView: ReactorView {
                 onTap: { reactor.action.onNext(.setSelectedLaunch(launch)) },
                 onSave: {
                     CacheManager.shared.toggleSavedLaunch(launch)
+                    NotificationManager.shared.toggleLaunchNotification(launch: launch)
                 }
             )
             .padding(.horizontal)

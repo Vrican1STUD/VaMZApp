@@ -18,6 +18,7 @@ final class LaunchDetailViewModel: Reactor {
         case refreshLaunchDetail
         case toggleSavedLaunch
         case updateCountdownNow
+        case showOnMap(MapPointLocation)
     }
     
     enum Mutation {
@@ -77,6 +78,9 @@ final class LaunchDetailViewModel: Reactor {
             return Observable.never()
         case .updateCountdownNow:
             return Observable.just(Mutation.didUpdateRemainingTime(currentState.launch.netDate?.timeIntervalSinceNow ?? 0.0))
+        case .showOnMap(let mapPointLocation):
+            CacheManager.shared.navigateToMapAndShow(mapPointLocation)
+            return .never()
         }
     }
     
@@ -111,5 +115,4 @@ final class LaunchDetailViewModel: Reactor {
                 }
         ])
     }
-    
 }

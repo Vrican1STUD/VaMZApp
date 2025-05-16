@@ -61,17 +61,23 @@ struct LaunchDetailView: ReactorView {
                                         }
                                         Spacer()
                                         VStack {
-                                            Image(systemName: reactor.currentState.isSaved ? "bell.fill" : "bell")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .transition(.scale.combined(with: .opacity))
-                                                .frame(width: 30)
-                                                .foregroundStyle(.red)
-                                                .padding(.leading)
-                                                .id(reactor.currentState.isSaved)
+                                            if let notificationDate = rocketDetail.netDate {
+                                                let bellColor = NotificationManager.shared.canManipulateNotification(date: notificationDate) ? Color.red : Color.white
+                                                Image(systemName: reactor.currentState.isSaved ? "bell.fill" : "bell")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .transition(.scale.combined(with: .opacity))
+                                                    .frame(width: 30)
+                                                    .foregroundStyle(bellColor)
+                                                    .padding(.leading)
+                                                    .id(reactor.currentState.isSaved)
+                                            }
                                         }
                                         .animation(.bouncy, value: reactor.currentState.isSaved )
-                                        .onTapGesture { reactor.action.onNext(.toggleSavedLaunch) }
+                                        .onTapGesture {
+                                            reactor.action.onNext(.toggleSavedLaunch)
+                                            NotificationManager.shared.toggleLaunchNotification(launch: state.launch)
+                                        }
                                     }
                                     .padding(16)
                                     .frame(maxWidth: .infinity)
@@ -103,7 +109,7 @@ struct LaunchDetailView: ReactorView {
                                 .font(.footnote)
                                 .foregroundStyle(Color.Text.parameters)
                             Button (
-                                action: { },
+                                action: { reactor.action.onNext(.showOnMap(rocketDetail.padLocation)) },
                                 label: {
                                     KFImage(URL( string: rocketDetail.pad.mapImage))
                                     //                .placeholder({ ProgressView() })

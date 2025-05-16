@@ -4,6 +4,7 @@
 //
 //  Created by Ja on 05/04/2025.
 //
+
 import Foundation
 
 struct LaunchResponse: Codable, Equatable {
@@ -90,4 +91,3 @@ struct LaunchFailureDetails: Codable {
     let time: Int
     let reason: String
 }
-

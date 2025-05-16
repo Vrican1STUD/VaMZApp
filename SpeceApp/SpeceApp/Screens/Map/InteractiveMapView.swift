@@ -7,20 +7,33 @@
 
 import SwiftUI
 import MapKit
+import SwiftUIReactorKit
 
-struct InteractiveMapView: View {
+struct Location: Identifiable {
+    var id: String { name + coordinate.latitude.description + coordinate.longitude.description }
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+struct InteractiveMapView: ReactorView {
     
-    @State private var region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194), // Example: San Francisco coordinates
-            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-        )
-        
-        var body: some View {
-            Map(coordinateRegion: $region, interactionModes: .all, showsUserLocation: true)
-                .onAppear {
-                    // You can perform actions when the view appears
-                    print("Map is ready")
-                }
-                .edgesIgnoringSafeArea(.all) // To make the map fill the screen
+    var reactor: InteractiveMapViewViewModel
+    @State var camera: MapCameraPosition = .automatic
+    
+    func body(reactor: InteractiveMapViewViewModel.ObservableObject) -> some SwiftUI.View {
+        Map(position: $camera) {
+            if let annotation = reactor.state.actualLocation {
+                Marker(coordinate: annotation.coordinate, label: { Text(annotation.name) })
+                    .tag(annotation.id)
+            }
         }
+        .mapStyle(.standard)
+        .onChange(of: reactor.state.actualLocation) { oldValue, newValue in
+            guard let newValue else { return }
+            withAnimation(.default.delay(0.3)) {
+                camera = .region(.init(center: newValue.coordinate, span: .init(latitudeDelta: 100, longitudeDelta: 100)))
+            }
+        }
+    }
+  
 }

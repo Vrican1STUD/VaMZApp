@@ -63,13 +63,16 @@ struct LaunchListView: View {
             .padding(10)
             
             VStack {
-                Image(systemName: isSaved ? "bell.fill" : "bell")
-                    .resizable()
-                    .transition(.scale.combined(with: .opacity))
-                    .frame(width: 20, height: 20)
-                    .foregroundStyle(.red)
-                    .padding(20)
-                    .id(isSaved)
+                if let notificationDate = launch.netDate {
+                    let bellColor = NotificationManager.shared.canManipulateNotification(date: notificationDate) ? Color.red : Color.white
+                    Image(systemName: isSaved ? "bell.fill" : "bell")
+                        .resizable()
+                        .transition(.scale.combined(with: .opacity))
+                        .frame(width: 20, height: 20)
+                        .foregroundStyle(bellColor)
+                        .padding(20)
+                        .id(isSaved)
+                }
             }
             .animation(.bouncy, value: isSaved)
             .onTapGesture { onSave() }
