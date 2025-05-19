@@ -9,7 +9,12 @@ import SwiftUI
 import Combine
 import ReactorKit
 
+// MARK: - TabBarViewModel
+
+/// Reactor managing the state and navigation logic of the Tab Bar in the app.
 final class TabBarViewModel: Reactor {
+    
+    // MARK: Tab Enum
     
     enum Tab: Int, Hashable {
         case home
@@ -17,23 +22,33 @@ final class TabBarViewModel: Reactor {
         case map
     }
     
+    // MARK: Actions
+    
     enum Action {
         case setSelectedTab(Tab)
         case navigateAndOpenLaunch(LaunchResult)
         case navigateAndShowOnMap(MapPointLocation)
     }
     
+    // MARK: Mutations
+    
     enum Mutation {
         case didUpdateSelectedTab(Tab)
     }
+    
+    // MARK: State
     
     struct State {
         var selectedTab: Tab = .home
     }
     
+    // MARK: Properties
+    
     var initialState: State
     private let launchesReactor: LaunchesViewModel
     private let mapReactor: InteractiveMapViewViewModel
+    
+    // MARK: Initialization
     
     init(launchesReactor: LaunchesViewModel, mapReactor: InteractiveMapViewViewModel) {
         self.initialState = State()
@@ -41,6 +56,9 @@ final class TabBarViewModel: Reactor {
         self.mapReactor = mapReactor
     }
     
+    // MARK: Transform
+    
+    /// Combines incoming actions with navigation events into a single stream of actions.
     func transform(action: Observable<Action>) -> Observable<Action> {
         let navigationStream = NavigationManager.shared.navigationPublisher
             .asObservable()
@@ -58,6 +76,9 @@ final class TabBarViewModel: Reactor {
         )
     }
     
+    // MARK: Mutate
+    
+    /// Processes incoming actions into mutations.
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .setSelectedTab(let tab):
@@ -69,6 +90,9 @@ final class TabBarViewModel: Reactor {
         }
     }
     
+    // MARK: Reduce
+    
+    /// Applies mutations to current state producing a new state.
     func reduce(state: State, mutation: Mutation) -> State {
         var state = state
         
@@ -80,6 +104,9 @@ final class TabBarViewModel: Reactor {
         return state
     }
     
+    // MARK: Navigation Helpers
+    
+    /// Switches to the Launches tab and selects a specific launch after a slight delay.
     func openLaunchAndMoveToSaved(launch: LaunchResult) -> Observable<Mutation> {
         let changeTab = Observable.just(Mutation.didUpdateSelectedTab(.launches))
         
@@ -93,6 +120,7 @@ final class TabBarViewModel: Reactor {
         return Observable.concat([changeTab, updateLaunches])
     }
     
+    /// Switches to the Map tab and sets the actual location on the map after a slight delay.
     func showPointOnMap(mapPointLocation: MapPointLocation) -> Observable<Mutation> {
         let changeTab = Observable.just(Mutation.didUpdateSelectedTab(.map))
         let sendToMapView = Observable.just(())

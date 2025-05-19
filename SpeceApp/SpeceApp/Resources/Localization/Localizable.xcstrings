@@ -5,7 +5,20 @@
 
     },
     "-" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "-"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "-"
+          }
+        }
+      }
     },
     "countdown.days" : {
       "localizations" : {
@@ -396,12 +409,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Launch Failure"
+            "value" : "Failure"
           }
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Neúspech"
           }
         }

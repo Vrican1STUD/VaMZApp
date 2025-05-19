@@ -11,10 +11,14 @@ import SwiftUIReactorKit
 
 struct InteractiveMapView: ReactorView {
     
-    var reactor: InteractiveMapViewViewModel
-    @State var camera: MapCameraPosition = .automatic
+    // MARK: - Properties
     
-    func body(reactor: InteractiveMapViewViewModel.ObservableObject) -> some SwiftUI.View {
+    var reactor: InteractiveMapViewViewModel
+    @State private var camera: MapCameraPosition = .automatic
+    
+    // MARK: - Body
+    
+    func body(reactor: InteractiveMapViewViewModel.ObservableObject) -> some View {
         Map(position: $camera) {
             if let annotation = reactor.state.actualLocation {
                 Annotation(annotation.name, coordinate: annotation.coordinate) {

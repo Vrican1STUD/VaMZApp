@@ -11,7 +11,11 @@ import ReactorKit
 
 final class LaunchDetailViewModel: Reactor {
     
+    // MARK: - Typealiases
+    
     typealias LaunchesState = FetchingState<LaunchDetailResult, AppError>
+    
+    // MARK: - Actions
     
     enum Action {
         case fetchLaunchDetail(id: String)
@@ -21,11 +25,15 @@ final class LaunchDetailViewModel: Reactor {
         case showOnMap(MapPointLocation)
     }
     
+    // MARK: - Mutations
+    
     enum Mutation {
         case didUpdateFetchingState(LaunchesState)
         case didToggleSavedState
         case didUpdateRemainingTime(Double)
     }
+    
+    // MARK: - State
     
     struct State {
         var fetchingState: LaunchesState = .idle
@@ -34,12 +42,23 @@ final class LaunchDetailViewModel: Reactor {
         var remainingTime: Double = 0.0
     }
     
+    // MARK: - Properties
+    
     var initialState: State
     
+    // MARK: - Initialization
+    
     init(launch: LaunchResult) {
-        self.initialState = State(fetchingState: .loading, launch: launch, isSaved: CacheManager.shared.savedLaunches.contains(launch))
+        self.initialState = State(
+            fetchingState: .loading,
+            launch: launch,
+            isSaved: CacheManager.shared.savedLaunches.contains(launch)
+        )
     }
     
+    // MARK: - Transformations
+    
+    /// Automatically triggers fetch action on initialization and merges with user actions
     func transform(action: Observable<Action>) -> Observable<Action> {
         Observable.merge(
             action,
@@ -47,20 +66,31 @@ final class LaunchDetailViewModel: Reactor {
         )
     }
     
+    /// Adds timers and saved launches publisher to mutations stream
     func transform(mutation: Observable<Mutation>) -> Observable<Mutation> {
-        let publisher = Timer
+        // Timer that updates countdown every second if launch date available
+        let timerPublisher = Timer
             .publish(every: 1, on: .main, in: .common)
             .autoconnect()
-            .compactMap { [weak self] _ in self?.currentState.fetchingState.successValue?.netDate }
+            .compactMap { [weak self] _ in
+                self?.currentState.fetchingState.successValue?.netDate
+            }
             .asObservable()
         
         return Observable.merge(
             mutation,
-            CacheManager.shared.savedLaunchesPublisher.asObservable().map { _ in .didToggleSavedState },
-            publisher.map { .didUpdateRemainingTime($0.timeIntervalSinceNow) }
+            // Observe changes to saved launches
+            CacheManager.shared.savedLaunchesPublisher.asObservable()
+                .map { _ in .didToggleSavedState },
+            // Update countdown remaining time every second
+            timerPublisher
+                .map { .didUpdateRemainingTime($0.timeIntervalSinceNow) }
         )
     }
     
+    // MARK: - Mutation Handling
+    
+    /// Handles incoming actions and produces mutations
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .fetchLaunchDetail(let id):
@@ -82,6 +112,9 @@ final class LaunchDetailViewModel: Reactor {
         }
     }
     
+    // MARK: - State Reduction
+    
+    /// Applies mutations to current state and returns new state
     func reduce(state: State, mutation: Mutation) -> State {
         var state = state
         
@@ -96,26 +129,34 @@ final class LaunchDetailViewModel: Reactor {
         case .didUpdateRemainingTime(let remainingTime):
             state.remainingTime = remainingTime
         }
+        
         return state
     }
     
+    // MARK: - Helpers
+    
+    /// Fetches launch details asynchronously
     func fetchDetail(id: String) -> Observable<Mutation> {
         return Observable.concat([
+            // Set fetching state to loading first
             Observable<Void>.just(())
                 .map { Mutation.didUpdateFetchingState(.loading) },
             
+            // Fetch launch details from the API
             RequestManager.shared.fetchDetailOfLaunch(id: id)
                 .flatMap { response -> Observable<Mutation> in
-                    let stateMutation = Mutation.didUpdateFetchingState(.success(response))
-                    return Observable.from([stateMutation])
+                    let successMutation = Mutation.didUpdateFetchingState(.success(response))
+                    return Observable.just(successMutation)
                 }
                 .catch { error in
+                    // Handle error by emitting error state mutation
                     Observable.just(Mutation.didUpdateFetchingState(.error(error as? AppError ?? .unknown)))
                 }
         ])
     }
     
-    func canManipulateNotification(netDate: Date) -> Bool{
-        return NotificationManager.shared.canManipulateNotification(date: netDate)
+    /// Determines whether notification manipulation is allowed for a given date
+    func canManipulateNotification(netDate: Date) -> Bool {
+        NotificationManager.shared.canManipulateNotification(date: netDate)
     }
 }

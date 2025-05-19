@@ -7,10 +7,20 @@
 
 import SwiftUI
 
+// MARK: - SocialButton
+
+/// A customizable button displaying an image for social media actions.
 struct SocialButton: View {
     
+    // MARK: Properties
+    
+    /// The image resource to display inside the button
     let image: ImageResource
+    
+    /// Closure executed when the button is tapped
     let action: () -> Void
+    
+    // MARK: Body
     
     var body: some View {
         Button(action: action) {
@@ -21,6 +31,6 @@ struct SocialButton: View {
                 .foregroundColor(.white)
                 .cornerRadius(10)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // disables default button style for custom appearance
     }
 }

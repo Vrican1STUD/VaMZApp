@@ -12,20 +12,28 @@ import Kingfisher
 @MainActor
 struct HomeView: ReactorView {
     
+    // MARK: - Properties
+    
     var reactor: HomeViewViewModel
+    
+    // MARK: - Body
     
     func body(reactor: HomeViewViewModel.ObservableObject) -> some View {
         content(state: reactor.state)
     }
     
+    // MARK: - Content View
+    
     @ViewBuilder
     func content(state: HomeViewViewModel.State) -> some View {
         VStack {
+            // Title
             Text(String(localized: "home.title"))
                 .font(.largeTitle)
                 .bold()
                 .frame(maxWidth: .infinity, alignment: .leading)
             
+            // Upcoming Launch or Empty State
             if let launch = reactor.currentState.nextUpcomingLaunch {
                 Button(
                     action: { reactor.action.onNext(.openLaunch(launch)) },
@@ -39,6 +47,7 @@ struct HomeView: ReactorView {
         .padding()
     }
     
+    // MARK: - Launch Card View
     
     func launchCardView(launch: LaunchResult) -> some View {
         VStack {
@@ -55,7 +64,7 @@ struct HomeView: ReactorView {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
-            .background{
+            .background {
                 if let imageUrl = launch.image?.imageBigUrl {
                     KFImage(imageUrl)
                         .placeholder {
@@ -65,9 +74,11 @@ struct HomeView: ReactorView {
                         .scaledToFill()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipped()
-                        .overlay{
+                        .overlay {
                             LinearGradient(
-                                colors: [.clear, .clear, .clear, .black.opacity(0.4), .black.opacity(0.8)], startPoint: .top, endPoint: .bottom
+                                colors: [.clear, .clear, .clear, Color.App.background.opacity(0.4), Color.App.background.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         }
                 } else {
@@ -81,6 +92,8 @@ struct HomeView: ReactorView {
             )
         }
     }
+    
+    // MARK: - Fallback Image View
     
     @ViewBuilder
     var fallbackImage: some View {

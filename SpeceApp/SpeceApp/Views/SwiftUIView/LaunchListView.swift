@@ -11,10 +11,21 @@ import Kingfisher
 @MainActor
 struct LaunchListView: View {
     
+    // MARK: - Properties
+    
+    /// The launch data to display
     let launch: LaunchResult
+    
+    /// Indicates whether this launch is saved/bookmarked
     let isSaved: Bool
+    
+    /// Closure to call when the launch row is tapped
     let onTap: () -> Void
+    
+    /// Closure to call when the save toggle is tapped
     let onSave: () -> Void
+    
+    // MARK: - Body
     
     var body: some View {
         Button(
@@ -24,22 +35,27 @@ struct LaunchListView: View {
         .buttonStyle(.plain)
     }
     
+    // MARK: - View Components
+    
+    /// Main list row view showing launch details and notification bell
     var listView: some View {
         HStack(alignment: .center) {
+            // Launch image thumbnail or default astronaut icon
             if let imageUrl = launch.image?.imageThumbnailUrl {
                 KFImage(imageUrl)
-                    .placeholder({ ProgressView() })
+                    .placeholder { ProgressView() }
                     .resizable()
                     .scaledToFill()
                     .frame(width: 70)
                     .clipped()
-            }
-            else {
+            } else {
                 Image(.astronaut)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 70)
             }
+            
+            // Launch information: name, mission, date, status
             VStack {
                 VStack(alignment: .leading) {
                     Text(launch.formattedNameModel.name)
@@ -49,6 +65,7 @@ struct LaunchListView: View {
                     Text(launch.formattedNameModel.mission)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.Text.info)
+                    
                     HStack {
                         if let net = launch.netString {
                             Text(net)
@@ -63,6 +80,7 @@ struct LaunchListView: View {
             }
             .padding(10)
             
+            // Notification bell view for saved launch notifications
             VStack {
                 if let notificationDate = launch.netDate {
                     NotificationBellView(
@@ -75,7 +93,7 @@ struct LaunchListView: View {
                     .padding(20)
                 }
             }
-            .animation(.bouncy, value: isSaved)
+            .animation(.bouncy, value: isSaved) // Animate save toggle
             .onTapGesture { onSave() }
         }
         .background(Color.App.SegmentControl.normal)
@@ -87,13 +105,3 @@ struct LaunchListView: View {
         .frame(maxHeight: 150)
     }
 }
-
-//#Preview {
-//    LaunchListView(
-//        launch: LaunchResult(id: "", url: "", name: "FalconSat", slug: "", status: LaunchStatus(rawValue: 0), lastUpdated: "", net: "2025-04-03T22:54:00Z", windowEnd: "", windowStart: "", image: LaunchImage(imageUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png",
-//            thumbnailUrl: "https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/255bauto255d__image_thumbnail_20240305192320.png")),
-//        isSaved: false,
-//        onTap: { print("Ahoj") },
-//        onSave: {}
-//    )
-//}

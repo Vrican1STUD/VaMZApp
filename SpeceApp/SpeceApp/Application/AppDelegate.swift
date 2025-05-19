@@ -7,11 +7,11 @@
 
 import SwiftUI
 
+/// The main entry point of the application.
 @main
 struct AppDelegate: App {
     
     init() {
-        UINavigationBar.setAppearance()
         NotificationManager.shared.requestAuthorization()
     }
     

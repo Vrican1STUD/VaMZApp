@@ -12,51 +12,72 @@ import Kingfisher
 @MainActor
 struct LaunchDetailView: ReactorView {
     
+    // MARK: - Environment
+    
     @Environment(\.dismiss) var dismiss
     
+    // MARK: - Properties
+    
     var reactor: LaunchDetailViewModel
+    
+    // MARK: - Body
     
     func body(reactor: LaunchDetailViewModel.ObservableObject) -> some View {
         content(state: reactor.state)
     }
+    
+    // MARK: - Content View
     
     @ViewBuilder
     func content(state: LaunchDetailViewModel.State) -> some View {
         VStack {
             switch state.fetchingState {
             case .idle:
+                // No content yet
                 EmptyView()
+                
             case .loading:
+                // Show loading spinner with large size and tinted color
                 ProgressView()
                     .controlSize(.large)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .tint(.Text.primary)
+                
             case .success:
+                // Display launch details if available
                 if let rocketDetail = state.fetchingState.successValue,
                    let notificationDate = rocketDetail.netDate {
                     ScrollView {
+                        // Header with image and notification bell
                         LaunchImageHeaderView(rocketDetail: rocketDetail, reactor: reactor, notificationDate: notificationDate)
                         
-                        VStack (spacing: 16) {
+                        VStack(spacing: 16) {
+                            // Countdown timer for launch
                             CountdownView(remainingTime: state.remainingTime)
                             
+                            // Status indicator for launch
                             LaunchStatusView(launchStatus: rocketDetail.status)
                                 .padding(.horizontal)
                             
+                            // Social media links
                             SocialMediaView(socialMediaUrls: rocketDetail.socailMediaUrls)
                             
+                            // Rocket name and description
                             TitleText(rocketDetail.rocket.configuration.name)
                             DescriptionText(rocketDetail.rocket.configuration.description)
                             
+                            // Rocket specifications view
                             RocketSpecificationView(rocketConfig: rocketDetail.rocket.configuration)
                             
+                            // Launch pad details
                             TitleText(String(localized: "detail.pad"))
                             DescriptionText(rocketDetail.pad.detailDescription)
                             
-                            Button (
+                            // Map image button, tapping shows location on map
+                            Button(
                                 action: { reactor.action.onNext(.showOnMap(rocketDetail.padLocation)) },
                                 label: {
-                                    KFImage(URL( string: rocketDetail.pad.mapImage))
+                                    KFImage(URL(string: rocketDetail.pad.mapImage))
                                         .resizable()
                                         .scaledToFill()
                                         .frame(maxHeight: 200)
@@ -68,7 +89,9 @@ struct LaunchDetailView: ReactorView {
                     }
                     .onAppear { reactor.action.onNext(.updateCountdownNow) }
                 }
+                
             case .error(let error):
+                // Show error view with retry option
                 LaunchErrorView(error: error, onRetry: { reactor.action.onNext(.refreshLaunchDetail) })
             }
         }
@@ -80,6 +103,9 @@ struct LaunchDetailView: ReactorView {
         }
     }
     
+    // MARK: - Subviews
+    
+    /// Header view with large image, title, and notification bell
     @ViewBuilder
     func LaunchImageHeaderView(rocketDetail: LaunchDetailResult, reactor: LaunchDetailViewModel, notificationDate: Date) -> some View {
         VStack {
@@ -91,7 +117,9 @@ struct LaunchDetailView: ReactorView {
                 .clipped()
                 .overlay(alignment: .bottom) {
                     LinearGradient(
-                        colors: [.clear, .black], startPoint: .top, endPoint: .bottom
+                        colors: [.clear, Color.App.background],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 }
                 .overlay(alignment: .bottom) {
@@ -107,6 +135,7 @@ struct LaunchDetailView: ReactorView {
                             isSaved: reactor.currentState.isSaved,
                             netDate: notificationDate,
                             onTap: {
+                                // Toggle saved launch state and notifications
                                 reactor.action.onNext(.toggleSavedLaunch)
                                 NotificationManager.shared.toggleLaunchNotification(launch: reactor.currentState.launch)
                             }
@@ -119,6 +148,7 @@ struct LaunchDetailView: ReactorView {
         }
     }
     
+    /// Close button at top-left corner to dismiss the view
     @ViewBuilder
     func CloseButtonView(action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -133,6 +163,7 @@ struct LaunchDetailView: ReactorView {
         .padding(16)
     }
     
+    /// Styled title text
     @ViewBuilder
     func TitleText(_ text: String) -> some View {
         Text(text)
@@ -142,6 +173,7 @@ struct LaunchDetailView: ReactorView {
             .foregroundStyle(Color.Text.primary)
     }
     
+    /// Styled description text
     @ViewBuilder
     func DescriptionText(_ text: String) -> some View {
         Text(text)
@@ -150,9 +182,3 @@ struct LaunchDetailView: ReactorView {
             .foregroundStyle(Color.Text.parameters)
     }
 }
-
-//#Preview {
-//    LaunchDetailView(isSaved: true,
-//                     id: "84a2a107-1e44-4994-ad9f-430ee81a741a",
-//                     onSave: {})
-//}

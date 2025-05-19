@@ -12,23 +12,35 @@ import MapKit
 
 final class InteractiveMapViewViewModel: Reactor {
     
+    // MARK: - Actions
+    
     enum Action {
         case setActualLocation(MapPointLocation?)
     }
+    
+    // MARK: - Mutations
     
     enum Mutation {
         case didUpdateActualLocation(MapPointLocation?)
     }
     
+    // MARK: - State
+    
     struct State {
         var actualLocation: MapPointLocation?
     }
     
+    // MARK: - Properties
+    
     var initialState: State
+    
+    // MARK: - Initialization
     
     init() {
         self.initialState = State(actualLocation: nil)
     }
+    
+    // MARK: - Mutate
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
@@ -37,6 +49,8 @@ final class InteractiveMapViewViewModel: Reactor {
         }
     }
     
+    // MARK: - Reduce
+    
     func reduce(state: State, mutation: Mutation) -> State {
         var state = state
         
@@ -44,7 +58,7 @@ final class InteractiveMapViewViewModel: Reactor {
         case .didUpdateActualLocation(let mapPointLocation):
             state.actualLocation = mapPointLocation
         }
-
+        
         return state
     }
 }

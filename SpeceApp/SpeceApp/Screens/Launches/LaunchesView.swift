@@ -14,14 +14,22 @@ struct LaunchesView: ReactorView {
     
     var reactor: LaunchesViewModel
     
+    // MARK: - View body
+    
     func body(reactor: LaunchesViewModel.ObservableObject) -> some View {
         content(state: reactor.state)
     }
     
+    // MARK: - Main content builder
+    
     @ViewBuilder
     func content(state: LaunchesViewModel.State) -> some View {
         VStack {
-            Picker(String(localized: "list.type"), selection: reactor.binding(for: \.pickerMode, set: { .setPickerMode($0) })) {
+            // Picker to select between all launches or saved launches
+            Picker(
+                String(localized: "list.type"),
+                selection: reactor.binding(for: \.pickerMode, set: { .setPickerMode($0) })
+            ) {
                 ForEach(LaunchesViewModel.LaunchPickerMode.allCases) { mode in
                     Text(mode.description).tag(mode.id)
                 }
@@ -29,6 +37,7 @@ struct LaunchesView: ReactorView {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             
+            // Show appropriate content based on picker mode
             switch state.pickerMode {
             case .all:
                 handleLoadingOfLaunches(state: state)
@@ -48,16 +57,22 @@ struct LaunchesView: ReactorView {
             }
         }
         .searchable(text: $searchText)
-        .onChange(of: searchText) {
-            reactor.action.onNext(.setSearchText(searchText))
+        .onChange(of: searchText) { newValue in
+            reactor.action.onNext(.setSearchText(newValue))
         }
-        .navigationDestination(item: reactor.binding(for: \.selectedLaunch, set: {.setSelectedLaunch($0)}), destination: {launch in
-            LaunchDetailView(reactor: .init(launch: launch))
-        })
+        // Navigate to detail view when a launch is selected
+        .navigationDestination(
+            item: reactor.binding(for: \.selectedLaunch, set: {.setSelectedLaunch($0)}),
+            destination: { launch in
+                LaunchDetailView(reactor: .init(launch: launch))
+            }
+        )
     }
     
+    // MARK: - Handle loading / error / success states for all launches
+    
     @ViewBuilder
-    func handleLoadingOfLaunches( state: LaunchesViewModel.State ) -> some View {
+    func handleLoadingOfLaunches(state: LaunchesViewModel.State) -> some View {
         switch state.fetchingState {
         case .loading:
             ProgressView()
@@ -95,8 +110,10 @@ struct LaunchesView: ReactorView {
         }
     }
     
+    // MARK: - Populate list with launches
+    
     @ViewBuilder
-    func fillLaunchesList( launches: [LaunchResult], reactor: LaunchesViewModel ) -> some View {
+    func fillLaunchesList(launches: [LaunchResult], reactor: LaunchesViewModel) -> some View {
         ForEach(launches) { launch in
             LaunchListView(
                 launch: launch,
@@ -107,6 +124,8 @@ struct LaunchesView: ReactorView {
             .padding(.horizontal)
         }
     }
+    
+    // MARK: - Add a test launch item (for development/debugging)
     
     @ViewBuilder
     func addTestLaunch() -> some View {

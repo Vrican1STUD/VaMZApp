@@ -15,7 +15,7 @@
 		09AB399D2DB2EF42006DE694 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 09AB399C2DB2EF42006DE694 /* LaunchScreen.storyboard */; };
 		09AB399F2DB52632006DE694 /* CountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB399E2DB52632006DE694 /* CountdownView.swift */; };
 		09AB39A12DB7B544006DE694 /* LaunchDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A02DB7B544006DE694 /* LaunchDetailViewModel.swift */; };
-		09AB39A32DB7D96A006DE694 /* LaunchDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A22DB7D96A006DE694 /* LaunchDetail.swift */; };
+		09AB39A32DB7D96A006DE694 /* LaunchDetailResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A22DB7D96A006DE694 /* LaunchDetailResponse.swift */; };
 		09AB39A52DB81D56006DE694 /* SocialMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A42DB81D56006DE694 /* SocialMediaView.swift */; };
 		09AB39A72DB81E93006DE694 /* RocketSpecificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB39A62DB81E93006DE694 /* RocketSpecificationView.swift */; };
 		09AB39AA2DBC102E006DE694 /* SwiftUIReactorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 09AB39A92DBC102E006DE694 /* SwiftUIReactorKit */; };
@@ -44,7 +44,6 @@
 		09BB6A352DB278B5004C07C5 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 09BB6A342DB278B5004C07C5 /* Kingfisher */; };
 		09BB6A372DB278E0004C07C5 /* LaunchListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BB6A362DB278E0004C07C5 /* LaunchListView.swift */; };
 		09BB6A392DB28CB2004C07C5 /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09BB6A382DB28CB1004C07C5 /* Colors.xcassets */; };
-		09BB6A3D2DB28EFF004C07C5 /* UINavigationBarExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BB6A3C2DB28EFF004C07C5 /* UINavigationBarExtensions.swift */; };
 		D0CC6CD52D81EE6100484136 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0CC6CD42D81EE6100484136 /* AppDelegate.swift */; };
 		D0CC6CD92D81EE6400484136 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0CC6CD82D81EE6400484136 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -58,7 +57,7 @@
 		09AB399C2DB2EF42006DE694 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		09AB399E2DB52632006DE694 /* CountdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownView.swift; sourceTree = "<group>"; };
 		09AB39A02DB7B544006DE694 /* LaunchDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchDetailViewModel.swift; sourceTree = "<group>"; };
-		09AB39A22DB7D96A006DE694 /* LaunchDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchDetail.swift; sourceTree = "<group>"; };
+		09AB39A22DB7D96A006DE694 /* LaunchDetailResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchDetailResponse.swift; sourceTree = "<group>"; };
 		09AB39A42DB81D56006DE694 /* SocialMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialMediaView.swift; sourceTree = "<group>"; };
 		09AB39A62DB81E93006DE694 /* RocketSpecificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RocketSpecificationView.swift; sourceTree = "<group>"; };
 		09AB39AE2DD69D11006DE694 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
@@ -85,7 +84,6 @@
 		09BB6A312DA527CE004C07C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		09BB6A362DB278E0004C07C5 /* LaunchListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchListView.swift; sourceTree = "<group>"; };
 		09BB6A382DB28CB1004C07C5 /* Colors.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Colors.xcassets; sourceTree = "<group>"; };
-		09BB6A3C2DB28EFF004C07C5 /* UINavigationBarExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UINavigationBarExtensions.swift; sourceTree = "<group>"; };
 		D0CC6CD12D81EE6100484136 /* SpeceApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpeceApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0CC6CD42D81EE6100484136 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D0CC6CD82D81EE6400484136 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -304,7 +302,7 @@
 			isa = PBXGroup;
 			children = (
 				09BB6A2F2DA151C7004C07C5 /* LaunchResponse.swift */,
-				09AB39A22DB7D96A006DE694 /* LaunchDetail.swift */,
+				09AB39A22DB7D96A006DE694 /* LaunchDetailResponse.swift */,
 			);
 			path = Response;
 			sourceTree = "<group>";
@@ -323,17 +321,8 @@
 			children = (
 				09AB39C52DDB2422006DE694 /* Date */,
 				09AB39B52DD6A46D006DE694 /* ReactorKitExtensions */,
-				09BB6A3B2DB28EE5004C07C5 /* UIKitExtensions */,
 			);
 			path = Extension;
-			sourceTree = "<group>";
-		};
-		09BB6A3B2DB28EE5004C07C5 /* UIKitExtensions */ = {
-			isa = PBXGroup;
-			children = (
-				09BB6A3C2DB28EFF004C07C5 /* UINavigationBarExtensions.swift */,
-			);
-			path = UIKitExtensions;
 			sourceTree = "<group>";
 		};
 		D0CC6CC82D81EE6100484136 = {
@@ -453,7 +442,7 @@
 			files = (
 				09AB39B22DD69EAD006DE694 /* InteractiveMapView.swift in Sources */,
 				09AB39A12DB7B544006DE694 /* LaunchDetailViewModel.swift in Sources */,
-				09AB39A32DB7D96A006DE694 /* LaunchDetail.swift in Sources */,
+				09AB39A32DB7D96A006DE694 /* LaunchDetailResponse.swift in Sources */,
 				09AB39D02DDB2537006DE694 /* EmptyLaunchesView.swift in Sources */,
 				09AB39D82DDB25A7006DE694 /* ScaledButtonStyle.swift in Sources */,
 				09AB39982DB2DC07006DE694 /* LaunchesViewModel.swift in Sources */,
@@ -475,7 +464,6 @@
 				09AB398F2DB2D047006DE694 /* CacheManager.swift in Sources */,
 				09AB39BC2DD752D1006DE694 /* TabBarViewModel.swift in Sources */,
 				D0CC6CD52D81EE6100484136 /* AppDelegate.swift in Sources */,
-				09BB6A3D2DB28EFF004C07C5 /* UINavigationBarExtensions.swift in Sources */,
 				09AB39CA2DDB24C7006DE694 /* SocialButton.swift in Sources */,
 				09BB6A302DA151C7004C07C5 /* LaunchResponse.swift in Sources */,
 				09AB39C02DD75411006DE694 /* HomeViewModel.swift in Sources */,
