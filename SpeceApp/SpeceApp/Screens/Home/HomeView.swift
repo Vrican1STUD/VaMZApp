@@ -11,17 +11,17 @@ import Kingfisher
 
 @MainActor
 struct HomeView: ReactorView {
-        
+    
     var reactor: HomeViewViewModel
     
-    func body(reactor: HomeViewViewModel.ObservableObject) -> some SwiftUI.View {
+    func body(reactor: HomeViewViewModel.ObservableObject) -> some View {
         content(state: reactor.state)
     }
     
     @ViewBuilder
-    func content(state: HomeViewViewModel.State) -> some SwiftUI.View {
+    func content(state: HomeViewViewModel.State) -> some View {
         VStack {
-            Text("Upcoming")
+            Text(String(localized: "home.title"))
                 .font(.largeTitle)
                 .bold()
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -29,92 +29,66 @@ struct HomeView: ReactorView {
             if let launch = reactor.currentState.nextUpcomingLaunch {
                 Button(
                     action: { reactor.action.onNext(.openLaunch(launch)) },
-                    label: { label }
+                    label: { launchCardView(launch: launch) }
                 )
                 .buttonStyle(.plain)
             } else {
-                emptyView
+                EmptyLaunchesView(description: String(localized: "home.upcoming.empty"))
             }
         }
         .padding()
     }
     
     
-    var label: some View {
+    func launchCardView(launch: LaunchResult) -> some View {
         VStack {
-            if let launch = reactor.currentState.nextUpcomingLaunch {
-                VStack {
-                    Spacer()
-                    Group {
-                        Text(launch.formattedNameModel.name)
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        Text(launch.formattedNameModel.mission)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white.opacity(0.6))
-                        
-                        Divider()
-                            .frame(height: 1)
-                            .background(Color.gray)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                    
-                    if let remainingDate = launch.netDate {
-                        let remainingTime = remainingDate.timeIntervalSinceNow
-                        CountdownView(remainingTime: remainingTime)
-                    }
+            VStack {
+                Spacer()
+                LaunchTitleView(name: launch.formattedNameModel.name, mission: launch.formattedNameModel.mission)
+                
+                LaunchStatusView(launchStatus: launch.status)
+                
+                if let remainingDate = launch.netDate {
+                    let remainingTime = remainingDate.timeIntervalSinceNow
+                    CountdownView(remainingTime: remainingTime)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
-                .background{
-                    VStack {
-                        if let imageUrl = launch.image?.imageBigUrl {
-                            KFImage(imageUrl)
-                                .placeholder {
-                                    Image(.blank)
-                                        .scaledToFill()
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        .clipped()
-                                }
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .clipped()
-                                .overlay{
-                                    LinearGradient(
-                                        colors: [.clear, .clear, .clear, .black.opacity(0.4), .black.opacity(0.8)], startPoint: .top, endPoint: .bottom
-                                    )
-                                }
-                        } else {
-                            Image(.blank)
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .clipped()
-                        }
-                    }
-                }
-                .cornerRadius(15)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.App.SegmentControl.normal, lineWidth: 1)
-                )
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding()
+            .background{
+                if let imageUrl = launch.image?.imageBigUrl {
+                    KFImage(imageUrl)
+                        .placeholder {
+                            fallbackImage
+                        }
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                        .overlay{
+                            LinearGradient(
+                                colors: [.clear, .clear, .clear, .black.opacity(0.4), .black.opacity(0.8)], startPoint: .top, endPoint: .bottom
+                            )
+                        }
+                } else {
+                    fallbackImage
+                }
+            }
+            .cornerRadius(15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(launch.status.color, lineWidth: 1)
+            )
         }
     }
     
     @ViewBuilder
-    var emptyView: some SwiftUI.View {
-        VStack {
-            Spacer()
-            Image(.astronaut)
-            Text("No saved upcoming Launches")
-            Spacer()
-        }
-        .frame(maxHeight: .infinity, alignment: .center)
+    var fallbackImage: some View {
+        Image(.blank)
+            .resizable()
+            .scaledToFill()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
     }
 }
 

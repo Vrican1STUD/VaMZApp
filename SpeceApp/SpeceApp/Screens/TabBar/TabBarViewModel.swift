@@ -11,10 +11,16 @@ import ReactorKit
 
 final class TabBarViewModel: Reactor {
     
+    enum Tab: Int, Hashable {
+        case home
+        case launches
+        case map
+    }
+    
     enum Action {
-        case updateSelectedTab(Tab)
-        case openLaunch(LaunchResult)
-        case ShowOnMap(MapPointLocation)
+        case setSelectedTab(Tab)
+        case navigateAndOpenLaunch(LaunchResult)
+        case navigateAndShowOnMap(MapPointLocation)
     }
     
     enum Mutation {
@@ -29,12 +35,6 @@ final class TabBarViewModel: Reactor {
     private let launchesReactor: LaunchesViewModel
     private let mapReactor: InteractiveMapViewViewModel
     
-    enum Tab: Int, Hashable {
-        case home
-        case launches
-        case map
-    }
-    
     init(launchesReactor: LaunchesViewModel, mapReactor: InteractiveMapViewViewModel) {
         self.initialState = State()
         self.launchesReactor = launchesReactor
@@ -42,14 +42,14 @@ final class TabBarViewModel: Reactor {
     }
     
     func transform(action: Observable<Action>) -> Observable<Action> {
-        let navigationStream = CacheManager.shared.navigationPublisher
+        let navigationStream = NavigationManager.shared.navigationPublisher
             .asObservable()
             .compactMap { target -> Action? in
                 switch target {
                 case .launch(let launch):
-                    return .openLaunch(launch)
+                    return .navigateAndOpenLaunch(launch)
                 case .map(let mapPointLocation):
-                    return .ShowOnMap(mapPointLocation)
+                    return .navigateAndShowOnMap(mapPointLocation)
                 }
             }
         return Observable.merge(
@@ -60,31 +60,12 @@ final class TabBarViewModel: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .updateSelectedTab(let tab):
+        case .setSelectedTab(let tab):
             return .just(.didUpdateSelectedTab(tab))
-        case .openLaunch(let launch):
-            // Navigate to the Launches tab
-            let changeTab = Observable.just(Mutation.didUpdateSelectedTab(.launches))
-            
-            // Set pickerMode to `.saved` via its own Reactor
-            let updateLaunches = Observable.just(()).delay(.milliseconds(300), scheduler: MainScheduler.instance)
-                .do(onNext: { [weak self] _ in
-                    self?.launchesReactor.action.onNext(.setPickerMode(.saved))
-                    self?.launchesReactor.action.onNext(.setSelectedLaunch(launch))
-                })
-                .flatMap { _ in Observable<Mutation>.empty() }
-            
-            return Observable.concat([changeTab, updateLaunches])
-        case .ShowOnMap(let mapPointLocation):
-            let changeTab = Observable.just(Mutation.didUpdateSelectedTab(.map))
-            let sendToMapView = Observable.just(())
-                .delay(.milliseconds(300), scheduler: MainScheduler.instance)
-                .do(onNext: { [weak self] in
-                    self?.mapReactor.action.onNext(.setActualLocation(mapPointLocation))
-                })
-                .flatMap { Observable<Mutation>.empty() }
-
-            return Observable.concat([changeTab, sendToMapView])
+        case .navigateAndOpenLaunch(let launch):
+            return openLaunchAndMoveToSaved(launch: launch)
+        case .navigateAndShowOnMap(let mapPointLocation):
+            return showPointOnMap(mapPointLocation: mapPointLocation)
         }
     }
     
@@ -99,5 +80,28 @@ final class TabBarViewModel: Reactor {
         return state
     }
     
-}
+    func openLaunchAndMoveToSaved(launch: LaunchResult) -> Observable<Mutation> {
+        let changeTab = Observable.just(Mutation.didUpdateSelectedTab(.launches))
+        
+        let updateLaunches = Observable.just(()).delay(.milliseconds(300), scheduler: MainScheduler.instance)
+            .do(onNext: { [weak self] _ in
+                self?.launchesReactor.action.onNext(.setPickerMode(.saved))
+                self?.launchesReactor.action.onNext(.setSelectedLaunch(launch))
+            })
+            .flatMap { _ in Observable<Mutation>.empty() }
+        
+        return Observable.concat([changeTab, updateLaunches])
+    }
+    
+    func showPointOnMap(mapPointLocation: MapPointLocation) -> Observable<Mutation> {
+        let changeTab = Observable.just(Mutation.didUpdateSelectedTab(.map))
+        let sendToMapView = Observable.just(())
+            .delay(.milliseconds(300), scheduler: MainScheduler.instance) // Delay to wait for tab transition animation
+            .do(onNext: { [weak self] in
+                self?.mapReactor.action.onNext(.setActualLocation(mapPointLocation))
+            })
+            .flatMap { Observable<Mutation>.empty() }
 
+        return Observable.concat([changeTab, sendToMapView])
+    }
+}

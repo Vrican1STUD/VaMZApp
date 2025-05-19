@@ -9,12 +9,6 @@ import SwiftUI
 import MapKit
 import SwiftUIReactorKit
 
-struct Location: Identifiable {
-    var id: String { name + coordinate.latitude.description + coordinate.longitude.description }
-    let name: String
-    let coordinate: CLLocationCoordinate2D
-}
-
 struct InteractiveMapView: ReactorView {
     
     var reactor: InteractiveMapViewViewModel
@@ -23,8 +17,14 @@ struct InteractiveMapView: ReactorView {
     func body(reactor: InteractiveMapViewViewModel.ObservableObject) -> some SwiftUI.View {
         Map(position: $camera) {
             if let annotation = reactor.state.actualLocation {
-                Marker(coordinate: annotation.coordinate, label: { Text(annotation.name) })
+                Annotation(annotation.name, coordinate: annotation.coordinate) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "location.north.circle.fill")
+                            .font(.title)
+                            .foregroundColor(annotation.color)
+                    }
                     .tag(annotation.id)
+                }
             }
         }
         .mapStyle(.standard)
@@ -35,5 +35,4 @@ struct InteractiveMapView: ReactorView {
             }
         }
     }
-  
 }

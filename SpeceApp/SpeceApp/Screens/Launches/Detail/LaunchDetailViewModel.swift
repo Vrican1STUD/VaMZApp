@@ -22,7 +22,7 @@ final class LaunchDetailViewModel: Reactor {
     }
     
     enum Mutation {
-        case didUpdatefetchingState(LaunchesState)
+        case didUpdateFetchingState(LaunchesState)
         case didToggleSavedState
         case didUpdateRemainingTime(Double)
     }
@@ -31,21 +31,17 @@ final class LaunchDetailViewModel: Reactor {
         var fetchingState: LaunchesState = .idle
         let launch: LaunchResult
         var isSaved: Bool
-        
         var remainingTime: Double = 0.0
     }
     
     var initialState: State
-    
-    private var timerCancellable: AnyCancellable?
     
     init(launch: LaunchResult) {
         self.initialState = State(fetchingState: .loading, launch: launch, isSaved: CacheManager.shared.savedLaunches.contains(launch))
     }
     
     func transform(action: Observable<Action>) -> Observable<Action> {
-    
-        return Observable.merge(
+        Observable.merge(
             action,
             Observable.just(.fetchLaunchDetail(id: currentState.launch.id))
         )
@@ -60,7 +56,7 @@ final class LaunchDetailViewModel: Reactor {
         
         return Observable.merge(
             mutation,
-            CacheManager.shared.savedLaunchedPublisher.asObservable().map { _ in .didToggleSavedState },
+            CacheManager.shared.savedLaunchesPublisher.asObservable().map { _ in .didToggleSavedState },
             publisher.map { .didUpdateRemainingTime($0.timeIntervalSinceNow) }
         )
     }
@@ -75,11 +71,13 @@ final class LaunchDetailViewModel: Reactor {
             
         case .toggleSavedLaunch:
             CacheManager.shared.toggleSavedLaunch(currentState.launch)
-            return Observable.never()
+            return .never()
+            
         case .updateCountdownNow:
             return Observable.just(Mutation.didUpdateRemainingTime(currentState.launch.netDate?.timeIntervalSinceNow ?? 0.0))
+            
         case .showOnMap(let mapPointLocation):
-            CacheManager.shared.navigateToMapAndShow(mapPointLocation)
+            NavigationManager.shared.navigateToMapAndShow(mapPointLocation)
             return .never()
         }
     }
@@ -88,11 +86,12 @@ final class LaunchDetailViewModel: Reactor {
         var state = state
         
         switch mutation {
-        case .didUpdatefetchingState(let fetchingState):
+        case .didUpdateFetchingState(let fetchingState):
             state.fetchingState = fetchingState
             
         case .didToggleSavedState:
             state.isSaved = CacheManager.shared.savedLaunches.contains(currentState.launch)
+            NotificationManager.shared.toggleLaunchNotification(launch: state.launch)
             
         case .didUpdateRemainingTime(let remainingTime):
             state.remainingTime = remainingTime
@@ -103,16 +102,20 @@ final class LaunchDetailViewModel: Reactor {
     func fetchDetail(id: String) -> Observable<Mutation> {
         return Observable.concat([
             Observable<Void>.just(())
-                .map { Mutation.didUpdatefetchingState(.loading) },
+                .map { Mutation.didUpdateFetchingState(.loading) },
             
             RequestManager.shared.fetchDetailOfLaunch(id: id)
                 .flatMap { response -> Observable<Mutation> in
-                    let stateMutation = Mutation.didUpdatefetchingState(.success(response))
+                    let stateMutation = Mutation.didUpdateFetchingState(.success(response))
                     return Observable.from([stateMutation])
                 }
                 .catch { error in
-                    Observable.just(Mutation.didUpdatefetchingState(.error(error as? AppError ?? .unknown)))
+                    Observable.just(Mutation.didUpdateFetchingState(.error(error as? AppError ?? .unknown)))
                 }
         ])
+    }
+    
+    func canManipulateNotification(netDate: Date) -> Bool{
+        return NotificationManager.shared.canManipulateNotification(date: netDate)
     }
 }

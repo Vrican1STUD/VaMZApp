@@ -11,23 +11,15 @@ import Combine
 
 extension Session {
     func request(params: SpaceX, id: String? = nil) -> DataRequest {
-        var url = params.url()
-        if let iD = id {
-            url.appendPathComponent(iD + "/")
-        }
-        return request(url, method: params.method, parameters: params.parameters, encoding: JSONEncoding.default)
+        return request(params.url(id: id), method: params.method, parameters: params.parameters, encoding: params.encoding)
     }
     func requestReplaceURL(url: URL, params: SpaceX) -> DataRequest {
-        return request(url, method: params.method, parameters: params.parameters, encoding: JSONEncoding.default)
+        return request(url, method: params.method, parameters: params.parameters, encoding: params.encoding)
     }
 }
+
 import RxSwift
 extension DataRequest {
-//    func process<T: Decodable>() async throws -> T {
-//        let decoder = JSONDecoder()
-//        decoder.keyDecodingStrategy = .convertFromSnakeCase
-//        return try await self.serializingDecodable(T.self, decoder: decoder).value
-//    }
     
     func processRx<T: Decodable>() -> Observable<T> {
         return Observable.create { observer in
@@ -35,7 +27,6 @@ extension DataRequest {
             decoder.keyDecodingStrategy = .convertFromSnakeCase
             
             self.responseDecodable(of: T.self, decoder: decoder) { response in
-//                print(response)
                 switch response.result {
                 case .success(let value):
                     observer.onNext(value)
@@ -56,36 +47,29 @@ final class RequestManager {
     
     private let session = AF
     
-    func fetchLaunches() -> Observable<Upcoming> {
-        session.request(params: .upcoming).processRx()
+    func fetchLaunches(search: String?) -> Observable<LaunchResponse> {
+        session.request(params: .launch(search: search)).processRx()
     }
     
-    func paginate(url: URL) -> Observable<Upcoming> {
-        session.requestReplaceURL(url: url, params: .upcoming).processRx()
+    func paginate(url: URL, search: String?) -> Observable<LaunchResponse> {
+        session.requestReplaceURL(url: url, params: .launch(search: search)).processRx()
     }
     
     func fetchDetailOfLaunch(id: String) -> Observable<LaunchDetailResult> {
-        session.request(params: .upcoming, id: id).processRx()
+        session.request(params: .detail, id: id).processRx()
     }
 }
 
 enum AppError: Error {
     case af(AFError)
-    case internetConnection
-    case serializationError
     case unknown
     
     var localizedDescription: String {
         switch self {
         case .af(let error):
             error.underlyingError?.localizedDescription ?? error.localizedDescription
-            
-        case .internetConnection:
-            "Chyba"
-        case .serializationError:
-            "Dalsia Chyba"
         case .unknown:
-            "Nechapem"
+            String(localized: "request.error")
         }
     }
 }
@@ -110,3 +94,4 @@ enum FetchingState<T: Equatable, E: Error> {
         }
     }
 }
+

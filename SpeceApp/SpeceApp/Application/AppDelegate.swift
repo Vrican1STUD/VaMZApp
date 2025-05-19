@@ -11,8 +11,8 @@ import SwiftUI
 struct AppDelegate: App {
     
     init() {
-//        UITabBar.setTabBarAppearance()
         UINavigationBar.setAppearance()
+        NotificationManager.shared.requestAuthorization()
     }
     
     var body: some Scene {
@@ -21,5 +21,4 @@ struct AppDelegate: App {
                 .tint(.Text.primary)
         }
     }
-    
 }

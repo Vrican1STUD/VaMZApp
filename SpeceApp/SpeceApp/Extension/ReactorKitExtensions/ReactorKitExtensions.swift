@@ -6,15 +6,10 @@
 //
 
 import SwiftUI
+import Combine
 import ReactorKit
 
 extension Reactor {
-    /// Creates a SwiftUI `Binding` from a `KeyPath` to the state and a setter that maps the new value into an `Action`.
-    ///
-    /// - Parameters:
-    ///   - keyPath: KeyPath to the state property
-    ///   - setter: Closure mapping the new value to an `Action`
-    /// - Returns: A SwiftUI Binding
     func binding<Value>(
         for keyPath: KeyPath<State, Value>,
         set setter: @escaping (Value) -> Action
@@ -23,5 +18,28 @@ extension Reactor {
             get: { self.currentState[keyPath: keyPath] },
             set: { newValue in self.action.onNext(setter(newValue)) }
         )
+    }
+}
+
+extension Publisher {
+    func asObservable() -> Observable<Output> {
+        Observable.create { observer in
+            let cancellable = self.sink(
+                receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        observer.onError(error)
+                    } else {
+                        observer.onCompleted()
+                    }
+                },
+                receiveValue: {
+                    observer.onNext($0)
+                }
+            )
+            
+            return Disposables.create {
+                cancellable.cancel()
+            }
+        }
     }
 }

@@ -10,39 +10,53 @@ import Alamofire
 
 enum SpaceX {
     
-    case upcoming
-    
+    case launch(search: String?)
+    case detail
+
     var path: String {
         switch self {
-        case .upcoming: "/2.3.0/launches/"
+        case .launch:
+            return "/2.3.0/launches/"
+        case .detail:
+            return "/2.3.0/launches/"
         }
     }
-    
+
     var method: HTTPMethod {
-        .get
+        return .get
     }
-    
+
     var parameters: Parameters? {
+        var params: Parameters = [
+            "format": "json"
+        ]
+        
         switch self {
-        default: nil
+        case .launch(let search):
+            params["mode"] = "list"
+            
+            if let search = search, !search.isEmpty {
+                params["search"] = search
+            }
+        case .detail:
+            break
         }
+        
+        return params
     }
     
     var encoding: ParameterEncoding {
-        switch self {
-        default:
-            JSONEncoding.default
-        }
+        return URLEncoding.default
     }
-    
-    func url() -> URL {
+
+    func url(id: String? = nil) -> URL {
         var url = URL(string: "https://lldev.thespacedevs.com\(path)")!
-//        ["format": "json"]
-        url.append(queryItems: [.init(name: "format", value: "json")])
-        url.append(queryItems: [.init(name: "mode", value: "list")])
-//        url.append(queryItems: [.init(name: "search", value: "fal")])
         
-//        print(url.absoluteString)
+        if let id = id {
+            url.appendPathComponent(id + "/")
+        }
+        
         return url
     }
 }
+

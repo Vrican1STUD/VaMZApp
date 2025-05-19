@@ -12,7 +12,7 @@ import ReactorKit
 final class HomeViewViewModel: Reactor {
     
     enum Action {
-        case updateSavedLaunchse
+        case updateSavedLaunches
         case openLaunch(LaunchResult)
     }
     
@@ -27,8 +27,8 @@ final class HomeViewViewModel: Reactor {
         
         var nextUpcomingLaunch: LaunchResult? {
             savedLaunches
-                .filter { $0.netDate ?? Date() > Date() }
-                .sorted { $0.netDate ?? Date() < $1.netDate! }
+                .filter { $0.netDate ?? .distantFuture > Date() }
+                .sorted { ($0.netDate ?? .distantFuture) < ($1.netDate ?? .distantFuture) }
                 .first
         }
     }
@@ -48,17 +48,18 @@ final class HomeViewViewModel: Reactor {
         
         return Observable.merge(
             mutation,
-            publisher.map { .didUpdateRemainingTime($0.timeIntervalSinceNow) }
+            publisher.map { .didUpdateRemainingTime($0.timeIntervalSinceNow) },
+            CacheManager.shared.savedLaunchesPublisher.asObservable().map { .didUpdateSavedLaunches($0) }
         )
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .updateSavedLaunchse:
+        case .updateSavedLaunches:
             return Observable.just(Mutation.didUpdateSavedLaunches(CacheManager.shared.savedLaunches))
             
         case .openLaunch(let launch):
-            CacheManager.shared.navigateTo(launch)
+            NavigationManager.shared.navigateTo(launch)
             return .never()
         }
     }
@@ -74,6 +75,5 @@ final class HomeViewViewModel: Reactor {
             state.remainingTime = remainingTime
         }
         return state
-        
     }
 }

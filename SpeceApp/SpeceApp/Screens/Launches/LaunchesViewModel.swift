@@ -21,8 +21,8 @@ final class LaunchesViewModel: Reactor {
 
         var description: String {
             switch self {
-            case .all: "All"
-            case .saved: "Saved"
+            case .all: String(localized: "picker.all")
+            case .saved: String(localized: "picker.saved")
             }
         }
     }
@@ -30,23 +30,22 @@ final class LaunchesViewModel: Reactor {
     enum Action {
         case fetchLaunches(isPullToRefresh: Bool)
         case paginate
-        
         case setSelectedLaunch(LaunchResult?)
-        
+        case toggleLaunch(LaunchResult)
         case setPickerMode(LaunchPickerMode)
         case setRealtimeSavedLaunches([LaunchResult])
+        case setSearchText(String)
     }
     
     enum Mutation {
-        case didUpdatefetchingState(LaunchesState)
+        case didUpdateFetchingState(LaunchesState)
         case didUpdateIsPaginating(Bool)
         case didUpdatePaginatingURL(URL?)
-        
         case didUpdateSelectedLaunch(LaunchResult?)
-        
-        case didSetPickerMode(LaunchPickerMode) //set or update
+        case didUpdatePickerMode(LaunchPickerMode)
         case didUpdateRealtimeSavedLaunches([LaunchResult])
         case didUpdateFetchedLaunches([LaunchResult])
+        case didUpdateSearchText(String)
     }
     
     struct State {
@@ -54,10 +53,15 @@ final class LaunchesViewModel: Reactor {
         var paginatingUrl: URL?
         var isPaginating = false
         var selectedLaunch: LaunchResult?
-        
         var pickerMode: LaunchPickerMode = .all
         var savedLaunches: [LaunchResult] = CacheManager.shared.savedLaunches
+        var filteredSavedLaunches: [LaunchResult] {
+            guard !searchText.isEmpty else { return self.savedLaunches }
+            return self.savedLaunches
+                .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        }
         var fetchedLaunches: [LaunchResult] = []
+        var searchText: String = ""
     }
     
     var initialState: State
@@ -65,24 +69,52 @@ final class LaunchesViewModel: Reactor {
     init(initialState: State) {
         self.initialState = initialState
     }
-    
+
     func transform(action: Observable<Action>) -> Observable<Action> {
-        Observable.merge(
-            action,
-            Observable.just(.fetchLaunches(isPullToRefresh: false))
+        let debouncedSearch = action
+            .compactMap {
+                guard case let .setSearchText(text) = $0 else { return nil }
+                return text
+            }
+            .debounce(.milliseconds(500), scheduler: MainScheduler.instance)
+            .distinctUntilChanged()
+            .flatMap { text in
+                Observable.from([
+                    Action.setSearchText(text),
+                    Action.fetchLaunches(isPullToRefresh: false)
+                ])
+            }
+
+        let passthrough = action.filter {
+            if case .setSearchText = $0 {
+                return false
+            }
+            return true
+        }
+        
+        return Observable.merge(
+            passthrough,
+            debouncedSearch,
+            Observable.just(.fetchLaunches(isPullToRefresh: false)),
+            Observable.just(.setSelectedLaunch(nil))
         )
     }
     
     func transform(mutation: Observable<Mutation>) -> Observable<Mutation> {
-        Observable.merge(
+        return Observable.merge(
             mutation,
-            CacheManager.shared.savedLaunchedPublisher.filter { _ in self.currentState.selectedLaunch == nil }.asObservable().map { .didUpdateRealtimeSavedLaunches($0) })
+            CacheManager.shared.savedLaunchesPublisher
+                .filter { _ in self.currentState.selectedLaunch == nil }
+                .asObservable()
+                .map { .didUpdateRealtimeSavedLaunches($0) }
+        )
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .fetchLaunches(let isPullToRefresh):
             return fetchLaunches(isPullToRefresh: isPullToRefresh)
+            
         case .paginate:
             return paginate()
             
@@ -90,10 +122,18 @@ final class LaunchesViewModel: Reactor {
             return .just(.didUpdateSelectedLaunch(selectedLaunch))
             
         case .setPickerMode(let mode):
-            return .just(.didSetPickerMode(mode))
+            return .just(.didUpdatePickerMode(mode))
+            
         case .setRealtimeSavedLaunches(let savedLaunches):
             return .just(.didUpdateRealtimeSavedLaunches(savedLaunches))
-        
+            
+        case .setSearchText(let text):
+            return .just(.didUpdateSearchText(text))
+            
+        case .toggleLaunch(let launch):
+            CacheManager.shared.toggleSavedLaunch(launch)
+            NotificationManager.shared.toggleLaunchNotification(launch: launch)
+            return .never()
         }
     }
     
@@ -101,23 +141,35 @@ final class LaunchesViewModel: Reactor {
         var state = state
         
         switch mutation {
-        case .didUpdatefetchingState(let fetchingState):
+        case .didUpdateFetchingState(let fetchingState):
             state.fetchingState = fetchingState
+            
         case .didUpdateIsPaginating(let isPaginating):
             state.isPaginating = isPaginating
+            
         case .didUpdatePaginatingURL(let paginatingURL):
             state.paginatingUrl = paginatingURL
             
         case .didUpdateSelectedLaunch(let selectedLaunch):
             state.selectedLaunch = selectedLaunch
+            guard selectedLaunch == nil else { break }
+            state.savedLaunches = CacheManager.shared.savedLaunches
             
-        case .didSetPickerMode(let mode):
+            
+        case .didUpdatePickerMode(let mode):
             state.pickerMode = mode
+            
         case .didUpdateRealtimeSavedLaunches(let savedLaunches):
             guard currentState.selectedLaunch == nil else { break }
-            state.savedLaunches = savedLaunches
+            state.savedLaunches = savedLaunches.sorted {
+                ($0.netDate ?? .distantFuture) < ($1.netDate ?? .distantFuture)
+            }
+            
         case .didUpdateFetchedLaunches(let fetchedLaunches):
             state.fetchedLaunches = fetchedLaunches
+            
+        case .didUpdateSearchText(let text):
+            state.searchText = text
         }
         
         return state
@@ -128,24 +180,24 @@ final class LaunchesViewModel: Reactor {
         
         let loadingPublisher: Observable<Mutation> = {
             if !isPullToRefresh {
-                Observable.just(Mutation.didUpdatefetchingState(.loading))
+                Observable.just(Mutation.didUpdateFetchingState(.loading))
             } else {
-                Observable.just(.didUpdatefetchingState(currentState.fetchingState)).delay(.milliseconds(500), scheduler: MainScheduler.instance)
+                Observable.just(.didUpdateFetchingState(currentState.fetchingState)).delay(.milliseconds(500), scheduler: MainScheduler.instance)
             }
         }()
         
         return Observable.concat([
             loadingPublisher,
-            RequestManager.shared.fetchLaunches()
+            RequestManager.shared.fetchLaunches(search: self.currentState.searchText)
                 .flatMap { response -> Observable<Mutation> in
-                    let stateMutation = Mutation.didUpdatefetchingState(.success(response.results))
+                    let stateMutation = Mutation.didUpdateFetchingState(.success(response.results))
                     let launchesMutation = Mutation.didUpdateFetchedLaunches(response.results)
                     let urlMutation = Mutation.didUpdatePaginatingURL(response.nextPagingUrl)
                     
                     return Observable.from([stateMutation, launchesMutation, urlMutation])
                 }
                 .catch { error in
-                    Observable.just(Mutation.didUpdatefetchingState(.error(error as? AppError ?? .unknown)))
+                    Observable.just(Mutation.didUpdateFetchingState(.error(error as? AppError ?? .unknown)))
                 }
         ])
     }
@@ -158,7 +210,7 @@ final class LaunchesViewModel: Reactor {
         return Observable.concat([
             Observable.just(Mutation.didUpdateIsPaginating(true)),
             
-            RequestManager.shared.paginate(url: url)
+            RequestManager.shared.paginate(url: url, search: self.currentState.searchText)
                 .flatMap { response in
                     var combinedResults = self.currentState.fetchedLaunches
                     for launch in response.results {
@@ -167,14 +219,14 @@ final class LaunchesViewModel: Reactor {
                         }
                     }
                     
-                    let stateMutation = Mutation.didUpdatefetchingState(.success(response.results))
+                    let stateMutation = Mutation.didUpdateFetchingState(.success(response.results))
                     let launchesMutation = Mutation.didUpdateFetchedLaunches(combinedResults)
                     let urlMutation = Mutation.didUpdatePaginatingURL(response.nextPagingUrl)
                     
                     return Observable.from([stateMutation, launchesMutation, urlMutation])
                 }
                 .catch { error in
-                    Observable.just(Mutation.didUpdatefetchingState(.error(error as? AppError ?? .unknown)))
+                    Observable.just(Mutation.didUpdateFetchingState(.error(error as? AppError ?? .unknown)))
                 },
             
             Observable.just(Mutation.didUpdateIsPaginating(false))
@@ -182,27 +234,3 @@ final class LaunchesViewModel: Reactor {
     }
 }
 
-
-extension Publisher {
-    func asObservable() -> Observable<Output> {
-        Observable.create { observer in
-            let cancellable = self.sink(
-                receiveCompletion: { completion in
-                    if case .failure(let error) = completion {
-                        observer.onError(error)
-                    } else {
-                        observer.onCompleted()
-                    }
-                },
-                receiveValue: {
-                    observer.onNext($0)
-                }
-            )
-            
-            return Disposables.create {
-                cancellable.cancel()
-            }
-        }
-
-    }
-}

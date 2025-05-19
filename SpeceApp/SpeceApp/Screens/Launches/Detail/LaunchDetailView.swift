@@ -5,6 +5,7 @@
 //  Created by Ja on 18/04/2025.
 //
 
+import SwiftUI
 import SwiftUIReactorKit
 import Kingfisher
 
@@ -15,104 +16,47 @@ struct LaunchDetailView: ReactorView {
     
     var reactor: LaunchDetailViewModel
     
-    func body(reactor: LaunchDetailViewModel.ObservableObject) -> some SwiftUI.View {
+    func body(reactor: LaunchDetailViewModel.ObservableObject) -> some View {
         content(state: reactor.state)
     }
     
     @ViewBuilder
-    func content(state: LaunchDetailViewModel.State) -> some SwiftUI.View {
+    func content(state: LaunchDetailViewModel.State) -> some View {
         VStack {
             switch state.fetchingState {
             case .idle:
                 EmptyView()
-                //                Text("empty")
-                //                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .loading:
                 ProgressView()
                     .controlSize(.large)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .tint(.Text.primary)
             case .success:
-                if let rocketDetail = state.fetchingState.successValue {
+                if let rocketDetail = state.fetchingState.successValue,
+                   let notificationDate = rocketDetail.netDate {
                     ScrollView {
-                        VStack {
-                            KFImage(rocketDetail.image.imageBigUrl)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(minHeight: 300)
-                                .ignoresSafeArea(edges: .top)
-                                .clipped()
-                                .overlay(alignment: .bottom) {
-                                    LinearGradient(
-                                        colors: [.clear, .black], startPoint: .top, endPoint: .bottom
-                                    )
-                                }
-                                .overlay(alignment: .bottom) {
-                                    HStack() {
-                                        VStack(alignment: .leading) {
-                                            Text(rocketDetail.formattedNameModel.name)
-                                                .font(.title)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(Color.Text.primary)
-                                            Text(rocketDetail.formattedNameModel.mission)
-                                                .font(.title)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(Color.Text.info)
-                                        }
-                                        Spacer()
-                                        VStack {
-                                            if let notificationDate = rocketDetail.netDate {
-                                                let bellColor = NotificationManager.shared.canManipulateNotification(date: notificationDate) ? Color.red : Color.white
-                                                Image(systemName: reactor.currentState.isSaved ? "bell.fill" : "bell")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .transition(.scale.combined(with: .opacity))
-                                                    .frame(width: 30)
-                                                    .foregroundStyle(bellColor)
-                                                    .padding(.leading)
-                                                    .id(reactor.currentState.isSaved)
-                                            }
-                                        }
-                                        .animation(.bouncy, value: reactor.currentState.isSaved )
-                                        .onTapGesture {
-                                            reactor.action.onNext(.toggleSavedLaunch)
-                                            NotificationManager.shared.toggleLaunchNotification(launch: state.launch)
-                                        }
-                                    }
-                                    .padding(16)
-                                    .frame(maxWidth: .infinity)
-                                }
-                        }
+                        LaunchImageHeaderView(rocketDetail: rocketDetail, reactor: reactor, notificationDate: notificationDate)
                         
                         VStack (spacing: 16) {
                             CountdownView(remainingTime: state.remainingTime)
+                            
+                            LaunchStatusView(launchStatus: rocketDetail.status)
+                                .padding(.horizontal)
+                            
                             SocialMediaView(socialMediaUrls: rocketDetail.socailMediaUrls)
-                            Text(rocketDetail.rocket.configuration.name)
-                                .font(.title)
-                                .bold()
-                                .frame(maxWidth: .infinity, alignment: . leading)
-                                .foregroundStyle(Color.Text.primary)
-                            Text(rocketDetail.rocket.configuration.description)
-                                .frame(maxWidth: .infinity, alignment: . leading)
-                                .font(.footnote)
-                                .foregroundStyle(Color.Text.parameters)
+                            
+                            TitleText(rocketDetail.rocket.configuration.name)
+                            DescriptionText(rocketDetail.rocket.configuration.description)
                             
                             RocketSpecificationView(rocketConfig: rocketDetail.rocket.configuration)
                             
-                            Text("Launchpad")
-                                .font(.title)
-                                .bold()
-                                .frame(maxWidth: .infinity, alignment: . leading)
-                            let padDescription = rocketDetail.pad.description ?? rocketDetail.pad.name
-                            Text(padDescription.isEmpty ? rocketDetail.pad.name : padDescription)
-                                .frame(maxWidth: .infinity, alignment: . leading)
-                                .font(.footnote)
-                                .foregroundStyle(Color.Text.parameters)
+                            TitleText(String(localized: "detail.pad"))
+                            DescriptionText(rocketDetail.pad.detailDescription)
+                            
                             Button (
                                 action: { reactor.action.onNext(.showOnMap(rocketDetail.padLocation)) },
                                 label: {
                                     KFImage(URL( string: rocketDetail.pad.mapImage))
-                                    //                .placeholder({ ProgressView() })
                                         .resizable()
                                         .scaledToFill()
                                         .frame(maxHeight: 200)
@@ -122,64 +66,88 @@ struct LaunchDetailView: ReactorView {
                         }
                         .padding(16)
                     }
-                    .onAppear {
-                        reactor.action.onNext(.updateCountdownNow)
-                    }
+                    .onAppear { reactor.action.onNext(.updateCountdownNow) }
                 }
             case .error(let error):
-                errorView(error: error)
+                LaunchErrorView(error: error, onRetry: { reactor.action.onNext(.refreshLaunchDetail) })
             }
         }
         .scrollIndicators(.hidden)
-        //        .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden()
         .ignoresSafeArea(edges: .top)
         .overlay(alignment: .topLeading) {
-            Button {
-                dismiss()
-            } label: {
-                HStack {
-                    Image(systemName: "xmark")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 30)
-                        .foregroundStyle(.white)
-                        .background(Color.App.Button.normal)
-                        .clipShape(Circle())
-                }
-            }
-            .padding(16)
+            CloseButtonView(action: { dismiss() })
         }
     }
     
-    func errorView(error: AppError) -> some SwiftUI.View {
-        VStack(spacing: 24) {
-            Spacer()
-            
-            Image(.astronaut)
+    @ViewBuilder
+    func LaunchImageHeaderView(rocketDetail: LaunchDetailResult, reactor: LaunchDetailViewModel, notificationDate: Date) -> some View {
+        VStack {
+            KFImage(rocketDetail.image.imageBigUrl)
+                .resizable()
+                .scaledToFill()
+                .frame(minHeight: 300)
+                .ignoresSafeArea(edges: .top)
+                .clipped()
+                .overlay(alignment: .bottom) {
+                    LinearGradient(
+                        colors: [.clear, .black], startPoint: .top, endPoint: .bottom
+                    )
+                }
+                .overlay(alignment: .bottom) {
+                    HStack {
+                        LaunchTitleView(
+                            name: rocketDetail.formattedNameModel.name,
+                            mission: rocketDetail.formattedNameModel.mission
+                        )
+                        Spacer()
+                        NotificationBellView(
+                            bellSize: 30.0,
+                            canManipulate: reactor.canManipulateNotification(netDate: notificationDate),
+                            isSaved: reactor.currentState.isSaved,
+                            netDate: notificationDate,
+                            onTap: {
+                                reactor.action.onNext(.toggleSavedLaunch)
+                                NotificationManager.shared.toggleLaunchNotification(launch: reactor.currentState.launch)
+                            }
+                        )
+                        .padding(.leading)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
+                }
+        }
+    }
+    
+    @ViewBuilder
+    func CloseButtonView(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 60)
-                .padding(.bottom, 32)
-            
-            Text(error.localizedDescription)
-                .multilineTextAlignment(.center)
-            
-            Button {
-                reactor.action.onNext(.refreshLaunchDetail)
-            } label: {
-                Text("Retry")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .frame(height: 60)
-                    .background(Color.App.Button.normal)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.scaled)
-            
-            Spacer()
+                .frame(width: 30)
+                .foregroundStyle(.white)
+                .background(Color.App.Button.normal)
+                .clipShape(Circle())
         }
-        .frame(maxHeight: .infinity, alignment: .center)
-        .padding()
+        .padding(16)
+    }
+    
+    @ViewBuilder
+    func TitleText(_ text: String) -> some View {
+        Text(text)
+            .font(.title)
+            .bold()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(Color.Text.primary)
+    }
+    
+    @ViewBuilder
+    func DescriptionText(_ text: String) -> some View {
+        Text(text)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .font(.footnote)
+            .foregroundStyle(Color.Text.parameters)
     }
 }
 
@@ -187,15 +155,4 @@ struct LaunchDetailView: ReactorView {
 //    LaunchDetailView(isSaved: true,
 //                     id: "84a2a107-1e44-4994-ad9f-430ee81a741a",
 //                     onSave: {})
-//}
-
-//extension UINavigationController: UIGestureRecognizerDelegate {
-//    override open func viewDidLoad() {
-//        super.viewDidLoad()
-//        interactivePopGestureRecognizer?.delegate = self
-//    }
-//
-//    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-//        return viewControllers.count > 1
-//    }
 //}
