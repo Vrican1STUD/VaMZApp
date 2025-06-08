@@ -78,3 +78,8 @@ Obsahuje všeobecné zdieľané UI komponenty ako štýly pre tlačidlá.
 ## Views
 
 Znovupoužiteľné View. Nemajú vlastnú logiku (reaktory), len vizuálnu reprezentáciu.
+
+# Zdroje
+[Swift clean architektúra](https://medium.com/@walfandi/a-beginners-guide-to-clean-architecture-in-ios-building-better-apps-step-by-step-53e6ec8b3abd)
+[Swift dokumetácia](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/)
+[The Space Devs Launch Library API](https://thespacedevs.com/llapi)
